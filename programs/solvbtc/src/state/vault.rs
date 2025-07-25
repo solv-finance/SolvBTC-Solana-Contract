@@ -1,0 +1,191 @@
+use anchor_lang::prelude::*;
+
+use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError};
+
+#[account(discriminator = [1])]
+#[derive(InitSpace)]
+pub struct Vault {
+    pub admin: Pubkey,
+    pub mint: Pubkey,
+    pub fee_receiver: Pubkey,
+    pub treasurer: Pubkey,
+    pub deposit_currencies: [Pubkey; 10],
+    pub verifier: [u8; 64],
+    pub oracle_updated: i64,
+    pub oracle_manager: Pubkey,
+    pub nav: u64,
+    pub deposit_fee: u16,
+    pub withdraw_fee: u16,
+    pub bump: u8,
+
+}
+
+impl Vault {
+    #[allow(clippy::too_many_arguments)]
+    pub fn initialize(
+        &mut self,
+        admin: Pubkey,
+        mint: Pubkey,
+        fee_receiver: Pubkey,
+        treasurer: Pubkey,
+        verifier: [u8; 64],
+        oracle_manager: Pubkey,
+        nav: u64,
+        deposit_fee: u16,
+        withdraw_fee: u16,
+        bump: u8,
+    ) -> Result<()> {
+        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        *self = Vault {
+            admin,
+            mint,
+            fee_receiver,
+            treasurer,
+            verifier,
+            deposit_currencies: [Pubkey::default(); 10],
+            oracle_updated: Clock::get()?.unix_timestamp,
+            oracle_manager,
+            nav,
+            deposit_fee,
+            withdraw_fee,
+            bump,
+        };
+        Ok(())
+    }
+
+    pub fn update(&mut self) -> Result<()> {
+        self.oracle_updated = Clock::get()?.unix_timestamp;
+        Ok(())
+    }
+
+    pub fn transfer_admin(&mut self, admin: Pubkey) -> Result<()> {
+        self.admin = admin;
+        self.update()
+    }
+
+    pub fn set_deposit_fee(&mut self, deposit_fee: u16) -> Result<()> {
+        require_gte!(MAX_FEE, deposit_fee, SolvError::InvalidFeeRatio);
+        self.deposit_fee = deposit_fee;
+        self.update()
+    }
+
+    pub fn set_withdraw_fee(&mut self, withdraw_fee: u16) -> Result<()> {
+        require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
+        self.withdraw_fee = withdraw_fee;
+        self.update()
+    }
+
+    pub fn set_fee_receiver(&mut self, fee_receiver: Pubkey) -> Result<()> {
+        self.fee_receiver = fee_receiver;
+        self.update()
+    }
+
+    pub fn set_verifier(&mut self, verifier: [u8; 64]) -> Result<()> {
+        self.verifier = verifier;
+        self.update()
+    }
+
+    pub fn set_treasurer(&mut self, treasurer: Pubkey) -> Result<()> {
+        self.treasurer = treasurer;
+        self.update()
+    }
+
+    pub fn add_currency(&mut self, currency: Pubkey) -> Result<()> {
+        // Find the first empty slot (Pubkey::default())
+        if let Some(empty_index) = self
+            .deposit_currencies
+            .iter()
+            .position(|&pubkey| pubkey == Pubkey::default())
+        {
+            // Check if the currency already exists in the occupied slots (0..empty_index)
+            if self.deposit_currencies[0..empty_index].contains(&currency) {
+                return Err(SolvError::CurrencyAlreadyExists.into());
+            }
+
+            // Add the currency to the first empty slot
+            self.deposit_currencies[empty_index] = currency;
+            Ok(())
+        } else {
+            // No empty slots available
+            Err(SolvError::CurrencyArrayFull.into())
+        }
+    }
+
+    pub fn remove_currency(&mut self, currency: Pubkey) -> Result<()> {
+        // Find the first instance of the currency
+        if let Some(index) = self
+            .deposit_currencies
+            .iter()
+            .position(|&pubkey| pubkey == currency)
+        {
+            // Shift all elements after the found index up by one position
+            for i in index..self.deposit_currencies.len() - 1 {
+                self.deposit_currencies[i] = self.deposit_currencies[i + 1];
+            }
+            // Set the last element to default (empty)
+            self.deposit_currencies[self.deposit_currencies.len() - 1] = Pubkey::default();
+            Ok(())
+        } else {
+            // Currency not found
+            Err(SolvError::CurrencyNotFound.into())
+        }
+    }
+
+    pub fn set_nav(&mut self, nav: u64) -> Result<()> {
+        // Check the new nav only increases or equals prev NAV (>=)
+        require_gte!(nav, self.nav, SolvError::InvalidNAVValue);
+        // Check nav growth does not exceed withdraw_fee
+        let max_nav: u64 = u64::try_from(u128::from(self.nav)
+            .checked_mul(self.withdraw_fee as u128)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            / 10_000)
+            .map_err(|_| ProgramError::ArithmeticOverflow)?
+            .checked_add(self.nav)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
+        require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
+        self.nav = nav;
+        self.update()
+    }
+
+    pub fn set_oracle_manager(&mut self, manager: Pubkey) -> Result<()> {
+        self.oracle_manager = manager;
+        self.update()
+    }
+
+    pub fn calculate_fee(amount: u64, fee: u16) -> Result<(u64, u64)> {
+        let fee: u64 = u128::from(amount)
+            .checked_mul(fee as u128)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .checked_div(10000)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .try_into()
+            .map_err(|_| ProgramError::ArithmeticOverflow)?;
+        let amount = amount.checked_sub(fee).ok_or(ProgramError::ArithmeticOverflow)?;
+        Ok((amount, fee))
+    }
+
+    /// Calculate shares to mint from a deposit amount
+    /// deposit_amount * ONE_BITCOIN / nav = shares
+    pub fn shares_from_deposit(&self, deposit_amount: u64) -> Result<u64> {
+        u128::from(deposit_amount)
+            .checked_mul(ONE_BITCOIN.into())
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .checked_div(self.nav.into())
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .try_into()
+            .map_err(|_| ProgramError::ArithmeticOverflow.into())
+    }
+
+    /// Calculate withdrawal amount from shares to burn
+    /// shares * nav / ONE_BITCOIN = withdrawal_amount
+    pub fn withdrawal_from_shares(&self, shares: u64) -> Result<u64> {
+        require_gte!(self.nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        u128::from(shares)
+            .checked_mul(self.nav.into())
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .checked_div(ONE_BITCOIN.into())
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .try_into()
+            .map_err(|_| ProgramError::ArithmeticOverflow.into())
+    }
+}
