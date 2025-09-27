@@ -40,7 +40,7 @@ pub struct VaultDeposit<'info> {
         mut,
         seeds = [b"vault", mint_target.key().as_ref()],
         bump = vault.bump,
-        constraint = vault.deposit_currencies.contains(&mint_token.key()),
+        constraint = vault.is_whitelisted(&mint_token.key()),
     )]
     pub vault: Account<'info, Vault>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -62,10 +62,10 @@ impl<'info> VaultDeposit<'info> {
     }
 
     pub fn mint_target_tokens(&mut self, amount: u64, min_amount_out: u64) -> Result<()> {
-        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.deposit_fee)?;        
+        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.deposit_fee(&self.mint_token.key())?)?;
 
         // Slippage protection
-        require_gte!(amount, min_amount_out, SolvError::SlippageExceeded);
+        require_gte!(mint_amount, min_amount_out, SolvError::SlippageExceeded);
 
         // For a 1/2 multisig, we only need 1 signature (the PDA)
         let accounts = MintToChecked1ofNMultisig {

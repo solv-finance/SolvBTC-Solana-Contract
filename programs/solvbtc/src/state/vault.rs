@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{borsh::de, *};
 
 use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError};
 
@@ -9,15 +9,19 @@ pub struct Vault {
     pub mint: Pubkey,
     pub fee_receiver: Pubkey,
     pub treasurer: Pubkey,
-    pub deposit_currencies: [Pubkey; 10],
+    pub deposit_currencies: [WhitelistedToken; 10],
     pub verifier: [u8; 64],
     pub oracle_updated: i64,
     pub oracle_manager: Pubkey,
     pub nav: u64,
-    pub deposit_fee: u16,
     pub withdraw_fee: u16,
     pub bump: u8,
+}
 
+#[derive(Default, Clone, Copy, InitSpace, AnchorSerialize, AnchorDeserialize)]
+pub struct WhitelistedToken {
+    mint: Pubkey,
+    deposit_fee: u16
 }
 
 impl Vault {
@@ -31,26 +35,31 @@ impl Vault {
         verifier: [u8; 64],
         oracle_manager: Pubkey,
         nav: u64,
-        deposit_fee: u16,
         withdraw_fee: u16,
         bump: u8,
     ) -> Result<()> {
         require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
         *self = Vault {
             admin,
             mint,
             fee_receiver,
             treasurer,
             verifier,
-            deposit_currencies: [Pubkey::default(); 10],
+            deposit_currencies: [WhitelistedToken::default(); 10],
             oracle_updated: Clock::get()?.unix_timestamp,
             oracle_manager,
             nav,
-            deposit_fee,
             withdraw_fee,
             bump,
         };
         Ok(())
+    }
+
+    pub fn is_whitelisted(&self, mint: &Pubkey) -> bool {
+        self.deposit_currencies.iter().find(|token| {
+            token.mint.eq(mint)
+        }).is_some()
     }
 
     pub fn update(&mut self) -> Result<()> {
@@ -63,9 +72,10 @@ impl Vault {
         self.update()
     }
 
-    pub fn set_deposit_fee(&mut self, deposit_fee: u16) -> Result<()> {
+    pub fn set_deposit_fee(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
         require_gte!(MAX_FEE, deposit_fee, SolvError::InvalidFeeRatio);
-        self.deposit_fee = deposit_fee;
+        let index = self.deposit_currencies.iter().position(|token| token.mint.eq(&currency)).ok_or(SolvError::CurrencyNotFound)?;
+        self.deposit_currencies[index].deposit_fee = deposit_fee;
         self.update()
     }
 
@@ -90,21 +100,26 @@ impl Vault {
         self.update()
     }
 
-    pub fn add_currency(&mut self, currency: Pubkey) -> Result<()> {
+    pub fn add_currency(&mut self, mint: Pubkey, deposit_fee: u16) -> Result<()> {
+        // Ensure we are not trying to add a null address
+        if mint.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         // Find the first empty slot (Pubkey::default())
         if let Some(empty_index) = self
             .deposit_currencies
             .iter()
-            .position(|&pubkey| pubkey == Pubkey::default())
+            .position(|&token| token.mint.eq(&Pubkey::default()))
         {
             // Check if the currency already exists in the occupied slots (0..empty_index)
-            if self.deposit_currencies[0..empty_index].contains(&currency) {
+            if self.deposit_currencies[0..empty_index].iter().find(|token| token.mint.eq(&mint)).is_some() {
                 return Err(SolvError::CurrencyAlreadyExists.into());
             }
 
             // Add the currency to the first empty slot
-            self.deposit_currencies[empty_index] = currency;
-            Ok(())
+            self.deposit_currencies[empty_index] = WhitelistedToken { mint, deposit_fee };
+
+            self.update()
         } else {
             // No empty slots available
             Err(SolvError::CurrencyArrayFull.into())
@@ -116,15 +131,16 @@ impl Vault {
         if let Some(index) = self
             .deposit_currencies
             .iter()
-            .position(|&pubkey| pubkey == currency)
+            .position(|&token| token.mint.eq(&currency))
         {
             // Shift all elements after the found index up by one position
             for i in index..self.deposit_currencies.len() - 1 {
                 self.deposit_currencies[i] = self.deposit_currencies[i + 1];
             }
             // Set the last element to default (empty)
-            self.deposit_currencies[self.deposit_currencies.len() - 1] = Pubkey::default();
-            Ok(())
+            self.deposit_currencies[self.deposit_currencies.len() - 1] = WhitelistedToken::default();
+            
+            self.update()
         } else {
             // Currency not found
             Err(SolvError::CurrencyNotFound.into())
@@ -138,7 +154,8 @@ impl Vault {
         let max_nav: u64 = u64::try_from(u128::from(self.nav)
             .checked_mul(self.withdraw_fee as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
-            / 10_000)
+            .checked_div(MAX_FEE.into())
+            .ok_or(ProgramError::ArithmeticOverflow)?)
             .map_err(|_| ProgramError::ArithmeticOverflow)?
             .checked_add(self.nav)
             .ok_or(ProgramError::ArithmeticOverflow)?;
@@ -156,12 +173,17 @@ impl Vault {
         let fee: u64 = u128::from(amount)
             .checked_mul(fee as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
-            .checked_div(10000)
+            .checked_div(MAX_FEE.into())
             .ok_or(ProgramError::ArithmeticOverflow)?
             .try_into()
             .map_err(|_| ProgramError::ArithmeticOverflow)?;
         let amount = amount.checked_sub(fee).ok_or(ProgramError::ArithmeticOverflow)?;
         Ok((amount, fee))
+    }
+
+    pub fn deposit_fee(&self, currency: &Pubkey) -> Result<u16> {
+        let index = self.deposit_currencies.iter().position(|token| token.mint.eq(currency)).ok_or(SolvError::CurrencyNotFound)?;
+        Ok(self.deposit_currencies[index].deposit_fee)
     }
 
     /// Calculate shares to mint from a deposit amount

@@ -182,7 +182,6 @@ describe("solvbtc", () => {
       oracleManager,
       ONE_BITCOIN,
       50,
-      50,
     )
       .accountsStrict({
         ...accounts,
@@ -205,7 +204,6 @@ describe("solvbtc", () => {
       Array.from(verifier),
       authority,
       ONE_BITCOIN,
-      50,
       50,
     )
       .accountsStrict({
@@ -255,7 +253,8 @@ describe("solvbtc", () => {
 
   it("Add vault currency", async () => {
     const tx = await program.methods.vaultAddCurrency(
-      mintB
+      mintB,
+      75
     )
       .accountsStrict({
         ...accounts,
@@ -273,7 +272,8 @@ describe("solvbtc", () => {
   it("Fail to add existing vault currency", async () => {
     try {
       await program.methods.vaultAddCurrency(
-        mintB
+        mintB,
+        50
       )
         .accountsStrict({
           ...accounts,
@@ -296,7 +296,8 @@ describe("solvbtc", () => {
 
   it("Add vault currency for removal", async () => {
     const tx = await program.methods.vaultAddCurrency(
-      mintA
+      mintA,
+      50
     )
       .accountsStrict({
         ...accounts,
@@ -345,8 +346,9 @@ describe("solvbtc", () => {
       .then(log)
   });
 
-    it("Set vault deposit fee", async () => {
+    it("Set vault deposit fee for mint B", async () => {
     const tx = await program.methods.vaultSetDepositFee(
+      mintB,
       500
     )
       .accountsStrict({
@@ -608,7 +610,7 @@ describe("solvbtc", () => {
         userTokenTa: userAtaB,
         userTargetTa: userAtaA,
         treasurerTokenTa: authorityAtaB,
-          feeReceiverTokenTa: authorityAtaB,
+        // feeReceiverTokenTa: authorityAtaB,
         mintToken: mintB,
         mintTarget: mintA,
       })
@@ -710,7 +712,7 @@ describe("solvbtc", () => {
       userTokenTa: userAtaB,
       userTargetTa: userAtaA,
       treasurerTokenTa: authorityAtaB,
-      feeReceiverTokenTa: authorityAtaB,
+      // feeReceiverTokenTa: authorityAtaB,
       mintToken: mintB,
       mintTarget: mintA,
     })

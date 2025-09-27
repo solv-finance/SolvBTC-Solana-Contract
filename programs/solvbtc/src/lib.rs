@@ -70,7 +70,6 @@ pub mod solvbtc {
         verifier: [u8; 64],
         oracle_manager: Pubkey,
         nav: u64,
-        deposit_fee: u16,
         withdraw_fee: u16,
     ) -> Result<()> {
         ctx.accounts.initialize(
@@ -80,7 +79,6 @@ pub mod solvbtc {
             verifier,
             oracle_manager,
             nav,
-            deposit_fee,
             withdraw_fee,
             ctx.bumps.vault,
         )
@@ -94,8 +92,8 @@ pub mod solvbtc {
 
     #[instruction(discriminator = 5)]
     #[doc = "# Add Vault Currency\nEnable admin to add deposit currency to vault."]
-    pub fn vault_add_currency(ctx: Context<VaultUpdate>, currency: Pubkey) -> Result<()> {
-        ctx.accounts.add_currency(currency)
+    pub fn vault_add_currency(ctx: Context<VaultUpdate>, currency: Pubkey, deposit_fee: u16) -> Result<()> {
+        ctx.accounts.add_currency(currency, deposit_fee)
     }
 
     #[instruction(discriminator = 6)]
@@ -106,8 +104,8 @@ pub mod solvbtc {
 
     #[instruction(discriminator = 7)]
     #[doc = "# Set Vault Deposit Fee\nEnable admin to set vault deposit fee in basis points."]
-    pub fn vault_set_deposit_fee(ctx: Context<VaultUpdate>, deposit_fee: u16) -> Result<()> {
-        ctx.accounts.set_deposit_fee(deposit_fee)
+    pub fn vault_set_deposit_fee(ctx: Context<VaultUpdate>, currency: Pubkey, deposit_fee: u16) -> Result<()> {
+        ctx.accounts.set_deposit_fee(currency, deposit_fee)
     }
 
     #[instruction(discriminator = 8)]

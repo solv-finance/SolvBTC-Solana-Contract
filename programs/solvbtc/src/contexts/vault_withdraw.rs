@@ -31,7 +31,7 @@ pub struct VaultWithdraw<'info> {
     #[account(
         mut,
         token::authority = user,
-        token::mint = mint_withdraw
+        token::mint = mint_withdraw,
     )]
     pub user_withdraw_ta: Box<InterfaceAccount<'info, TokenAccount>>,
     pub mint_withdraw: Box<InterfaceAccount<'info, Mint>>,
@@ -39,7 +39,7 @@ pub struct VaultWithdraw<'info> {
         mut,
         seeds = [b"vault",vault.mint.key().as_ref()],
         bump = vault.bump,
-        constraint = vault.deposit_currencies.contains(&mint_withdraw.key())
+        constraint = vault.is_whitelisted(&mint_withdraw.key())
     )]
     pub vault: Account<'info, Vault>,
     #[account(
@@ -64,6 +64,11 @@ impl<'info> VaultWithdraw<'info> {
         // Get withdraw request
         let mut withdraw_request_data = &self.withdraw_request.data.borrow()[..];
         let withdraw_request = WithdrawRequest::try_deserialize(&mut withdraw_request_data)?;
+
+        // Verify withdraw account address;
+        if self.user_withdraw_ta.key().ne(&withdraw_request.withdraw_token_account) {
+            return Err(SolvError::InvalidAddress)?;
+        }
 
         // Verify signature
         withdraw_request.verify_signature(Secp256k1EcdsaSignature(signature), self.vault.verifier)?;

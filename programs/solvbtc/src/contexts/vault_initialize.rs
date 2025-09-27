@@ -31,7 +31,6 @@ impl<'info> VaultInitialize<'info> {
         verifier: [u8; 64], 
         oracle_manager: Pubkey, 
         nav: u64,
-        deposit_fee: u16, 
         withdraw_fee: u16, 
         bump: u8
     ) -> Result<()> {
@@ -43,7 +42,6 @@ impl<'info> VaultInitialize<'info> {
             verifier,
             oracle_manager,
             nav,
-            deposit_fee,
             withdraw_fee,
             bump,
         )

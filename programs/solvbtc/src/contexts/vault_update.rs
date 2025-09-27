@@ -24,8 +24,8 @@ impl<'info> VaultUpdate<'info> {
         self.vault.transfer_admin(admin)
     }
 
-    pub fn set_deposit_fee(&mut self, deposit_fee: u16) -> Result<()> {
-        self.vault.set_deposit_fee(deposit_fee)
+    pub fn set_deposit_fee(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
+        self.vault.set_deposit_fee(currency, deposit_fee)
     }
 
     pub fn set_withdraw_fee(&mut self, withdraw_fee: u16) -> Result<()> {
@@ -44,8 +44,8 @@ impl<'info> VaultUpdate<'info> {
         self.vault.set_treasurer(treasurer)
     }
 
-    pub fn add_currency(&mut self, currency: Pubkey) -> Result<()> {
-        self.vault.add_currency(currency)
+    pub fn add_currency(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
+        self.vault.add_currency(currency, deposit_fee)
     }
 
     pub fn remove_currency(&mut self, currency: Pubkey) -> Result<()> {

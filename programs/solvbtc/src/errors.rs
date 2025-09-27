@@ -14,6 +14,8 @@ pub enum SolvError {
     InvalidHash,
     #[msg("SolvVault: Slippage exceeded")]
     SlippageExceeded,
+    #[msg("SolvVault: Invalid address")]
+    InvalidAddress,
     #[msg("SolvMinterManager: Minter array full")]
     MinterArrayFull,
     #[msg("SolvMinterManager: Minter already exists")]
