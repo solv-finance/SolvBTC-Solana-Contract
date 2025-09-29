@@ -127,6 +127,10 @@ impl Vault {
     }
 
     pub fn remove_currency(&mut self, currency: Pubkey) -> Result<()> {
+        // Ensure we are not trying to add a null address
+        if mint.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         // Find the first instance of the currency
         if let Some(index) = self
             .deposit_currencies
