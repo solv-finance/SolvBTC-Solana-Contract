@@ -30,6 +30,10 @@ impl MinterManager {
     }
 
     pub fn add_minter(&mut self, minter: Pubkey) -> Result<()> {
+        // Ensure we are not trying to add a null address
+        if minter.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         // Find the first empty slot (Pubkey::default())
         if let Some(empty_index) = self
             .minters
@@ -51,6 +55,11 @@ impl MinterManager {
     }
 
     pub fn remove_minter(&mut self, minter: Pubkey) -> Result<()> {
+        // Ensure we are not trying to add a null address
+        if minter.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
+
         // Find the first instance of the minter
         if let Some(index) = self.minters.iter().position(|&pubkey| pubkey == minter) {
             // Shift all elements after the found index up by one position
