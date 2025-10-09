@@ -631,10 +631,10 @@ describe("solvbtc", () => {
       authority
     )
     .accountsStrict({
-      ...accounts,
+      oracleManager: authority,
       vault: vaultA
     })
-    .signers([oracleManagerKeypair])
+    .signers([authorityKeypair])
     .rpc()
     .then(confirm)
     .then(log)
