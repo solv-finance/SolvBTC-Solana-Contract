@@ -121,6 +121,7 @@ impl<'info> VaultWithdraw<'info> {
             withdraw_amount:amount, 
             withdraw_token: self.mint_withdraw.key(), 
             request_hash: withdraw_request.request_hash, 
+            withdraw_fee: fee,
         });
 
         Ok(())
