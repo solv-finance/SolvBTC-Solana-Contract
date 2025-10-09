@@ -17,6 +17,7 @@ pub struct WithdrawEvent {
     pub withdraw_token: Pubkey,
     pub withdraw_amount: u64,
     pub request_hash: [u8; 32],
+    pub withdraw_fee: u64,
 }
 
 #[event]
