@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 pub const ONE_BITCOIN: u64 = 100_000_000;
 pub const ADMIN_WHITELIST: &[Pubkey] = &[
-    Pubkey::from_str_const("3GhdJHto7UsUH7sHUtJfqivdsaTc8nAeGi2vPyiQZKFY")
+    Pubkey::from_str_const("3Aq5Zw5BjY3YfdFBLD1CKDbB5HgtXajJhhPBspXokbdS")
 ];
 
 pub const MAX_FEE: u16 = 10_000;
