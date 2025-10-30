@@ -152,18 +152,19 @@ impl Vault {
     }
 
     pub fn set_nav(&mut self, nav: u64) -> Result<()> {
-        // Check the new nav only increases or equals prev NAV (>=)
-        require_gte!(nav, self.nav, SolvError::InvalidNAVValue);
-        // Check nav growth does not exceed withdraw_fee
-        let max_nav: u64 = u64::try_from(u128::from(self.nav)
-            .checked_mul(self.withdraw_fee as u128)
+
+        // Check nav growth/ does not exceed 0.05%
+        let nav_diff: u64 = u64::try_from(u128::from(self.nav)
+            .checked_mul(5 as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
             .checked_div(MAX_FEE.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
-            .map_err(|_| ProgramError::ArithmeticOverflow)?
-            .checked_add(self.nav)
-            .ok_or(ProgramError::ArithmeticOverflow)?;
+            .map_err(|_| ProgramError::ArithmeticOverflow)?;
+        
+        let max_nav = self.nav.checked_add(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
+        let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
         require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
+        require_gte!(nav, min_nav, SolvError::InvalidNAVValue);
         self.nav = nav;
         self.update()
     }
