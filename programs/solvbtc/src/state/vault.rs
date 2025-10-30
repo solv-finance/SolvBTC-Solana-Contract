@@ -159,7 +159,7 @@ impl Vault {
             .ok_or(ProgramError::ArithmeticOverflow)?
             .checked_div(MAX_FEE.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
-            .map_err(|_| ProgramError::ArithmeticOverflow)?
+            .map_err(|_| ProgramError::ArithmeticOverflow)?;
         
         let max_nav = self.nav.checked_add(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
         let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
