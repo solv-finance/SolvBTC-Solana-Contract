@@ -6,14 +6,14 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solvbtc = "DF4xtEw8N5WfJxmPTtgwg6DcaivVdrUqGpgz3mvhkb2i"
 solv_burnmint_token_pool = "DF4xtEw8N5WfJxmPTtgwg6DcaivVdrUqGpgz3mvhkb2i"
+solvbtc = "soLv1S6GsAEVEnXmVY3oz6GtrNJteQ28iTyRQrHXvkz"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

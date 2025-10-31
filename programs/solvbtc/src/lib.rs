@@ -10,7 +10,7 @@ pub mod helpers;
 
 use contexts::*;
 
-declare_id!("DF4xtEw8N5WfJxmPTtgwg6DcaivVdrUqGpgz3mvhkb2i");
+declare_id!("soLv1S6GsAEVEnXmVY3oz6GtrNJteQ28iTyRQrHXvkz");
 
 #[program]
 pub mod solvbtc {
