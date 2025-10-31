@@ -74,7 +74,7 @@ impl<'info> VaultWithdraw<'info> {
         withdraw_request.verify_signature(Secp256k1EcdsaSignature(signature), self.vault.verifier)?;
 
         // Check nav >= nav of withdraw request
-        require_gte!(self.vault.nav, withdraw_request.nav, SolvError::NAVExceeded);
+        // require_gte!(self.vault.nav, withdraw_request.nav, SolvError::NAVExceeded);
 
         // Get withdraw amount and withdraw fee
         let (amount, fee) = Vault::calculate_fee(withdraw_request.withdraw_amount, self.vault.withdraw_fee)?;
