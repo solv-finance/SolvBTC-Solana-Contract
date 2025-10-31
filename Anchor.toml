@@ -6,7 +6,6 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solv_burnmint_token_pool = "DF4xtEw8N5WfJxmPTtgwg6DcaivVdrUqGpgz3mvhkb2i"
 solvbtc = "soLv1S6GsAEVEnXmVY3oz6GtrNJteQ28iTyRQrHXvkz"
 
 [registry]
