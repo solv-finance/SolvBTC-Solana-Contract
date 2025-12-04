@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use solana_secp256k1::UncompressedPoint;
-use solana_secp256k1_ecdsa::{hash::sha256::Sha256, Secp256k1EcdsaSignature};
+use solana_secp256k1_ecdsa::{hash::sha256::Sha256, Secp256k1EcdsaSignature, hash::keccak::Keccak};
+use const_crypto::bs58::{encode_pubkey};
 
 use crate::events::WithdrawRequestEvent;
 
@@ -70,5 +71,29 @@ impl WithdrawRequest {
             self.shares.to_le_bytes().as_ref(),
             self.nav.to_le_bytes().as_ref()
         ])
+    }
+
+    pub fn verify_eip191(&self, signature: Secp256k1EcdsaSignature, verifier: [u8;64]) -> Result<()>{
+        Ok(signature
+            .normalize_s()
+            .verify::<Keccak, UncompressedPoint>(&self.eip191_msg(), UncompressedPoint(verifier))
+            .map_err(|_| ProgramError::MissingRequiredSignature)?)
+    }
+
+    pub fn concat(&self) -> String {
+        let data = self.user.to_string() + "\n" +
+        self.withdraw_token.to_string().as_str() + "\n" +
+        encode_pubkey(&self.request_hash).str() + "\n" +
+        &self.shares.to_string() + "\n" +
+        &self.nav.to_string();
+        data
+    }
+
+    pub fn eip191_msg(&self) -> Vec<u8>{
+        let message_prefix = "\x19Ethereum Signed Message:\n";
+        let data = self.concat();
+        let length= data.len().to_string();
+        let full_msg = message_prefix.to_string() + &length + &data;
+        full_msg.as_bytes().to_vec()
     }
 }
