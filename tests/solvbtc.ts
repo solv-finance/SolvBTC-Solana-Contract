@@ -1,8 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Solvbtc } from "../target/types/solvbtc";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction } from "@solana/web3.js";
-import { createWithdrawRequestHash, createWithdrawSignature, deriveMinterManagerAddress, derivePoolSignerAddress, deriveVaultAddress, deriveWithdrawRequestAddress, deriveWithdrawRequestSigningHash, ecdsaPubkeyFromPrivkey, ONE_BITCOIN } from "../sdk/solvbtc";
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction, ComputeBudgetProgram, sendAndConfirmTransaction } from "@solana/web3.js";
+import { createWithdrawRequestHash, createWithdrawSignature, deriveMinterManagerAddress, derivePoolSignerAddress, deriveVaultAddress, deriveWithdrawRequestAddress, 
+  deriveWithdrawRequestSigningHash, ecdsaPubkeyFromPrivkey, ONE_BITCOIN,
+deriveWithdrawRequestEip191, createEip191WithdrawSig } from "../sdk/solvbtc";
 import { BN } from "bn.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createInitializeMint2Instruction, createInitializeMultisigInstruction, createTransferCheckedInstruction, getAssociatedTokenAddressSync, getMinimumBalanceForRentExemptMint, getMinimumBalanceForRentExemptMultisig, MINT_SIZE, MULTISIG_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
@@ -93,7 +95,7 @@ describe("solvbtc", () => {
   /// ECDSA Keys
   let verifierKeypair = Buffer.from("c2fffbf8e5cec943afb99e8194a5819c64c9df75b4ed03b2a111e8ccdcf55689", "hex")
   let verifier = Array.from(ecdsaPubkeyFromPrivkey(verifierKeypair).subarray(1));
-  console.log(Buffer.from(verifier).toString("hex"))
+  console.log(Buffer.from(verifier).toString("hex"));
   const accounts = {
     authority,
     admin,
@@ -195,7 +197,7 @@ describe("solvbtc", () => {
       .then(log)
   });
 
-    it("Initialize Vault B", async () => {
+  it("Initialize Vault B", async () => {
     // Add your test here.
     const tx = await program.methods.vaultInitialize(
       authority,
@@ -663,10 +665,9 @@ describe("solvbtc", () => {
     }
   });
 
-  it("Fail to set invalid NAV", async () => {
-    try {
+  it("Increase NAV", async () => {
       const tx = await program.methods.vaultSetNav(
-        ONE_BITCOIN.sub(new BN(1))
+        ONE_BITCOIN.add(new BN(1))
       )
       .accountsStrict({
         ...accounts,
@@ -677,12 +678,7 @@ describe("solvbtc", () => {
       .rpc()
       .then(confirm)
       .then(log)
-      throw new Error("This shouldn't succeed")
-    } catch(e) {
-      if (e.error.errorMessage != "SolvOracle: Invalid NAV value - must be >= 1 Bitcoin") {
-        throw new Error("Unexpected error message")
-      }
-    }
+
   });
   
   it("Deposit Token B to vault A", async () => {
@@ -771,7 +767,7 @@ describe("solvbtc", () => {
   it("Process withdraw request", async () => {
     const withdrawRequestData = await program.account.withdrawRequest.fetch(withdrawRequest);
 
-    const verifierHash = deriveWithdrawRequestSigningHash(
+    const verifierHash = deriveWithdrawRequestEip191(
       user,
       mintB,
       hash,
@@ -779,11 +775,11 @@ describe("solvbtc", () => {
       withdrawRequestData.nav,
     )
 
-    const signature = createWithdrawSignature(
+    const signature = createEip191WithdrawSig(
       verifierKeypair,
       verifierHash
     )
-    const tx = await program.methods.vaultWithdraw(
+    const ix = await program.methods.vaultWithdraw(
       Array.from(hash),
       signature.signature
     )
@@ -794,10 +790,15 @@ describe("solvbtc", () => {
       mintWithdraw: mintB,
       vaultWithdrawTa: vaultAAtaB,
       feeReceiverTa: authorityAtaB
-    })
-    .signers([userKeypair])
-    .rpc()
-    .then(confirm)
-    .then(log)
+    }).instruction();
+
+    const tx = new Transaction();
+    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }));
+    tx.add(ix);
+    await sendAndConfirmTransaction(connection, tx, [userKeypair]);
+
+
+
+
   })
 });

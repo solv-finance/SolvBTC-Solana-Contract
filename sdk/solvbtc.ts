@@ -1,9 +1,13 @@
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { keccak256 } from 'ethereum-cryptography/keccak';
+
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { sha256 } from "@noble/hashes/sha2";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import { LENGTH_SIZE } from "@solana/spl-token";
 
-export const SOLVBTC_PROGRAM_ID = new PublicKey("DF4xtEw8N5WfJxmPTtgwg6DcaivVdrUqGpgz3mvhkb2i");
+export const SOLVBTC_PROGRAM_ID = new PublicKey("CAm2xucNj5S5xRtGikxBbZcCyXLaz3Y3VyBd6CewVBxn");
 export const CCIP_TOKENPOOL_PROGRAM_ID = new PublicKey("ECvqYduigrFHeAU1kFCkehiiQz9eaeddUz6gH7BfD7AL");
 
 export const SOLV_BTC_MINT = new PublicKey("SoLvHDFVstC74Jr9eNLTDoG4goSUsn1RENmjNtFKZvW");
@@ -80,6 +84,26 @@ export function deriveWithdrawRequestSigningHash(user: PublicKey, mint: PublicKe
     ...shares.toArrayLike(Buffer, 'le', 8),
     ...nav.toArrayLike(Buffer, 'le', 8),
   ]))
+}
+
+export function deriveWithdrawRequestEip191(user: PublicKey, mint: PublicKey, hash: Uint8Array, share:BN, nav: BN): Uint8Array{
+  let prefix = "\x19Ethereum Signed Message:\n";
+  let msg = user.toBase58() +"\n" + mint.toBase58() +"\n" + bs58.encode(hash) + "\n" 
+  + Number(share).toString() + "\n" + Number(nav).toString();
+  let eip191Msg = prefix + msg.length.toString() + msg;
+  console.log(eip191Msg);
+  return Buffer.from(eip191Msg);
+}
+
+export function createEip191WithdrawSig(privkey: Uint8Array, hash: Uint8Array): {
+  isOdd: boolean;
+  signature: number[];
+}{
+  const signature = secp256k1.sign(keccak256(hash), privkey, {lowS:true})
+  return {
+    isOdd: signature.recovery != 0,
+    signature: new Array(...signature.toBytes("compact"))
+  }
 }
 
 export function createWithdrawSignature(privkey: Uint8Array, hash: Uint8Array): {

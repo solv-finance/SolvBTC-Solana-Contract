@@ -7,8 +7,8 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 use crate::{constants::{MAX_FEE}};
+use solana_secp256k1_ecdsa::{Secp256k1EcdsaSignature};
 
-use solana_secp256k1_ecdsa::Secp256k1EcdsaSignature;
 
 #[derive(Accounts)]
 #[instruction(hash: [u8;32])]
@@ -72,7 +72,7 @@ impl<'info> VaultWithdraw<'info> {
         }
 
         // Verify signature
-        withdraw_request.verify_signature(Secp256k1EcdsaSignature(signature), self.vault.verifier)?;
+        withdraw_request.verify_eip191(Secp256k1EcdsaSignature(signature), self.vault.verifier)?;
 
         // Check 1.01*nav >= nav of withdraw request
         let nav_diff: u64 = u64::try_from(u128::from(self.vault.nav)
