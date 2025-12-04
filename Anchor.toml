@@ -12,7 +12,7 @@ solvbtc = "CAm2xucNj5S5xRtGikxBbZcCyXLaz3Y3VyBd6CewVBxn"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
