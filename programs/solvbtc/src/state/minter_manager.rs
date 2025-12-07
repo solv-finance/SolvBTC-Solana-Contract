@@ -9,6 +9,7 @@ pub struct MinterManager {
     pub minters: [Pubkey; 10],
     pub updated: i64,
     pub bump: u8,
+    _padding0: [u8; 7],
 }
 
 impl MinterManager {

@@ -20,6 +20,7 @@ pub struct Vault {
     pub nav: u64,
     pub withdraw_fee: u16,
     pub bump: u8,
+    _padding0: [u8; 1],
 }
 
 #[derive(Default, Clone, Copy, InitSpace, AnchorSerialize, AnchorDeserialize)]
@@ -56,6 +57,7 @@ impl Vault {
             nav,
             withdraw_fee,
             bump,
+            _padding0: [0; 1],
         };
         Ok(())
     }
