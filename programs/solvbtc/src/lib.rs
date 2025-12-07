@@ -73,6 +73,7 @@ pub mod solvbtc {
         nav: u64,
         withdraw_fee: u16,
     ) -> Result<()> {
+        ctx.accounts.validate(admin, fee_receiver, treasurer, oracle_manager, withdraw_fee)?;
         ctx.accounts.initialize(
             admin,
             fee_receiver,

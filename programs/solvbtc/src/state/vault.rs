@@ -44,7 +44,7 @@ impl Vault {
         bump: u8,
     ) -> Result<()> {
         validate_nav(nav)?;
-        require_gte!(MAX_FEE_BPS, withdraw_fee, SolvError::InvalidFeeRatio);
+        validate_fee(withdraw_fee)?;
         *self = Vault {
             admin,
             mint,

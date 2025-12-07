@@ -1,7 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
 use anchor_spl::token::spl_token::instruction::mint_to_checked;
 
-use crate::{constants::ONE_BITCOIN, errors::SolvError};
+use crate::{
+    constants::{MAX_FEE_BPS, ONE_BITCOIN},
+    errors::SolvError,
+};
 
 #[derive(Accounts)]
 pub struct MintToChecked1ofNMultisig<'info> {
@@ -51,6 +54,13 @@ pub fn validate_nav(nav: u64) -> Result<()> {
 pub fn validate_pubkey(address: &Pubkey) -> Result<()> {
     if address.eq(&Pubkey::default()) {
         return Err(SolvError::InvalidAddress.into());
+    }
+    Ok(())
+}
+
+pub fn validate_fee(value: u16) -> Result<()> {
+    if value > MAX_FEE_BPS {
+        return Err(SolvError::InvalidFeeRatio.into());
     }
     Ok(())
 }

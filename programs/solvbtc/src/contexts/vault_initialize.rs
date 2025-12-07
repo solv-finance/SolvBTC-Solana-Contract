@@ -1,4 +1,8 @@
-use crate::{constants::ADMIN_WHITELIST, state::Vault};
+use crate::{
+    constants::ADMIN_WHITELIST,
+    helpers::{validate_fee, validate_pubkey},
+    state::Vault,
+};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::Mint;
 
@@ -22,17 +26,34 @@ pub struct VaultInitialize<'info> {
 }
 
 impl<'info> VaultInitialize<'info> {
+    pub fn validate(
+        &self,
+        admin: Pubkey,
+        fee_receiver: Pubkey,
+        treasurer: Pubkey,
+        oracle_manager: Pubkey,
+        withdraw_fee: u16,
+    ) -> Result<()> {
+        validate_pubkey(&admin)?;
+        validate_pubkey(&fee_receiver)?;
+        validate_pubkey(&treasurer)?;
+        validate_pubkey(&oracle_manager)?;
+        validate_fee(withdraw_fee)?;
+
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
-        admin: Pubkey, 
-        fee_receiver: Pubkey, 
-        treasurer: Pubkey, 
-        verifier: [u8; 64], 
-        oracle_manager: Pubkey, 
+        admin: Pubkey,
+        fee_receiver: Pubkey,
+        treasurer: Pubkey,
+        verifier: [u8; 64],
+        oracle_manager: Pubkey,
         nav: u64,
-        withdraw_fee: u16, 
-        bump: u8
+        withdraw_fee: u16,
+        bump: u8,
     ) -> Result<()> {
         self.vault.initialize(
             admin,
