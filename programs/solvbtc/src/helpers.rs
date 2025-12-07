@@ -47,3 +47,10 @@ pub fn validate_nav(nav: u64) -> Result<()> {
 
     Ok(())
 }
+
+pub fn validate_pubkey(address: &Pubkey) -> Result<()> {
+    if address.eq(&Pubkey::default()) {
+        return Err(SolvError::InvalidAddress.into());
+    }
+    Ok(())
+}

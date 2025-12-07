@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::errors::SolvError;
+use crate::{errors::SolvError, helpers::validate_pubkey};
 
 #[account(discriminator = [2])]
 #[derive(InitSpace)]
@@ -32,9 +32,7 @@ impl MinterManager {
 
     pub fn add_minter(&mut self, minter: Pubkey) -> Result<()> {
         // Ensure we are not trying to add a null address
-        if minter.eq(&Pubkey::default()) {
-            return Err(SolvError::InvalidAddress.into());
-        }
+        validate_pubkey(&minter)?;
         // Find the first empty slot (Pubkey::default())
         if let Some(empty_index) = self
             .minters
@@ -57,9 +55,7 @@ impl MinterManager {
 
     pub fn remove_minter(&mut self, minter: Pubkey) -> Result<()> {
         // Ensure we are not trying to add a null address
-        if minter.eq(&Pubkey::default()) {
-            return Err(SolvError::InvalidAddress.into());
-        }
+        validate_pubkey(&minter)?;
 
         // Find the first instance of the minter
         if let Some(index) = self.minters.iter().position(|&pubkey| pubkey == minter) {

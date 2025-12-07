@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::{MAX_FEE_BPS, MAX_NAV_GROWTH_BPS, ONE_BITCOIN},
     errors::SolvError,
-    helpers::validate_nav,
+    helpers::{validate_nav, validate_pubkey},
 };
 
 #[account(discriminator = [1])]
@@ -113,9 +113,7 @@ impl Vault {
 
     pub fn add_currency(&mut self, mint: Pubkey, deposit_fee: u16) -> Result<()> {
         // Ensure we are not trying to add a null address
-        if mint.eq(&Pubkey::default()) {
-            return Err(SolvError::InvalidAddress.into());
-        }
+        validate_pubkey(&mint)?;
         // Find the first empty slot (Pubkey::default())
         if let Some(empty_index) = self
             .deposit_currencies
@@ -143,9 +141,7 @@ impl Vault {
 
     pub fn remove_currency(&mut self, currency: Pubkey) -> Result<()> {
         // Ensure we are not trying to add a null address
-        if currency.eq(&Pubkey::default()) {
-            return Err(SolvError::InvalidAddress.into());
-        }
+        validate_pubkey(&currency)?;
         // Find the first instance of the currency
         if let Some(index) = self
             .deposit_currencies
