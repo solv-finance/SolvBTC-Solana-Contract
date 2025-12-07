@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 use crate::{constants::{MAX_FEE_BPS}};
 
-use solana_secp256k1_ecdsa::Secp256k1EcdsaSignature;
+use solana_secp256k1_ecdsa::{SECP256K1_ECDSA_SIGNATURE_LENGTH, Secp256k1EcdsaSignature};
 
 #[derive(Accounts)]
 #[instruction(hash: [u8;32])]
@@ -61,7 +61,7 @@ pub struct VaultWithdraw<'info> {
 }
 
 impl<'info> VaultWithdraw<'info> {
-    pub fn withdraw_tokens(&mut self, signature: [u8;64]) -> Result<()> {
+    pub fn withdraw_tokens(&mut self, signature: [u8; SECP256K1_ECDSA_SIGNATURE_LENGTH]) -> Result<()> {
         // Get withdraw request
         let mut withdraw_request_data = &self.withdraw_request.data.borrow()[..];
         let withdraw_request = WithdrawRequest::try_deserialize(&mut withdraw_request_data)?;
