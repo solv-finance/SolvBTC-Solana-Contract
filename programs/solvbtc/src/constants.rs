@@ -1,10 +1,12 @@
 use anchor_lang::prelude::*;
 
+#[constant]
 pub const ONE_BITCOIN: u64 = 100_000_000;
+#[constant]
 pub const ADMIN_WHITELIST: &[Pubkey] = &[
     Pubkey::from_str_const("BsF2mR9brTd7u7wGWrejksQzsdrGFNcddRSYeNpHZixM")
 ];
-
+#[constant]
 pub const MAX_FEE: u16 = 10_000;
 
 /* Mints */
