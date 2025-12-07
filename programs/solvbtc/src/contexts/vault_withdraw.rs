@@ -40,7 +40,6 @@ pub struct VaultWithdraw<'info> {
         mut,
         seeds = [b"vault",vault.mint.key().as_ref()],
         bump = vault.bump,
-        constraint = vault.is_whitelisted(&mint_withdraw.key())
     )]
     pub vault: Account<'info, Vault>,
     #[account(
@@ -61,6 +60,12 @@ pub struct VaultWithdraw<'info> {
 }
 
 impl<'info> VaultWithdraw<'info> {
+    pub fn validate(&self) -> Result<()> {
+        self.vault.is_whitelisted(&self.mint_withdraw.key())?;
+
+        Ok(())
+    }
+
     pub fn withdraw_tokens(&mut self, signature: [u8; SECP256K1_ECDSA_SIGNATURE_LENGTH]) -> Result<()> {
         // Get withdraw request
         let mut withdraw_request_data = &self.withdraw_request.data.borrow()[..];

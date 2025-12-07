@@ -62,11 +62,15 @@ impl Vault {
         Ok(())
     }
 
-    pub fn is_whitelisted(&self, mint: &Pubkey) -> bool {
-        self.deposit_currencies
+    pub fn is_whitelisted(&self, mint: &Pubkey) -> Result<()> {
+        let is_whitelisted = self.deposit_currencies
             .iter()
             .find(|token| token.mint.eq(mint))
-            .is_some()
+            .is_some();
+
+        require!(is_whitelisted, SolvError::MintNotWhitelisted);
+
+        Ok(())
     }
 
     pub fn update(&mut self) -> Result<()> {

@@ -16,6 +16,8 @@ pub enum SolvError {
     SlippageExceeded,
     #[msg("SolvVault: Invalid address")]
     InvalidAddress,
+    #[msg("SolvVault: Mint not whitelisted in vault")]
+    MintNotWhitelisted,
     #[msg("SolvMinterManager: Minter array full")]
     MinterArrayFull,
     #[msg("SolvMinterManager: Minter already exists")]
