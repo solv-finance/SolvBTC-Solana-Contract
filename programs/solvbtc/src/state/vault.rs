@@ -1,6 +1,6 @@
 use anchor_lang::prelude::{borsh::de, *};
 
-use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError, helpers::validate_nav};
+use crate::{constants::{MAX_FEE_BPS, ONE_BITCOIN}, errors::SolvError, helpers::validate_nav};
 
 #[account(discriminator = [1])]
 #[derive(InitSpace)]
@@ -39,7 +39,7 @@ impl Vault {
         bump: u8,
     ) -> Result<()> {
         validate_nav(nav)?;
-        require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
+        require_gte!(MAX_FEE_BPS, withdraw_fee, SolvError::InvalidFeeRatio);
         *self = Vault {
             admin,
             mint,
@@ -73,14 +73,14 @@ impl Vault {
     }
 
     pub fn set_deposit_fee(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
-        require_gte!(MAX_FEE, deposit_fee, SolvError::InvalidFeeRatio);
+        require_gte!(MAX_FEE_BPS, deposit_fee, SolvError::InvalidFeeRatio);
         let index = self.deposit_currencies.iter().position(|token| token.mint.eq(&currency)).ok_or(SolvError::CurrencyNotFound)?;
         self.deposit_currencies[index].deposit_fee = deposit_fee;
         self.update()
     }
 
     pub fn set_withdraw_fee(&mut self, withdraw_fee: u16) -> Result<()> {
-        require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
+        require_gte!(MAX_FEE_BPS, withdraw_fee, SolvError::InvalidFeeRatio);
         self.withdraw_fee = withdraw_fee;
         self.update()
     }
@@ -157,7 +157,7 @@ impl Vault {
         let nav_diff: u64 = u64::try_from(u128::from(self.nav)
             .checked_mul(5 as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
-            .checked_div(MAX_FEE.into())
+            .checked_div(MAX_FEE_BPS.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
             .map_err(|_| ProgramError::ArithmeticOverflow)?;
         
@@ -179,7 +179,7 @@ impl Vault {
         let fee: u64 = u128::from(amount)
             .checked_mul(fee as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
-            .checked_div(MAX_FEE.into())
+            .checked_div(MAX_FEE_BPS.into())
             .ok_or(ProgramError::ArithmeticOverflow)?
             .try_into()
             .map_err(|_| ProgramError::ArithmeticOverflow)?;
