@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::spl_token;
+use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
+use anchor_spl::token::spl_token::instruction::mint_to_checked;
 
 use crate::{constants::ONE_BITCOIN, errors::SolvError};
 
@@ -16,11 +16,11 @@ pub struct MintToChecked1ofNMultisig<'info> {
 }
 
 pub fn mint_to_checked_1_of_n_multisig<'info>(
-    ctx: anchor_lang::prelude::CpiContext<'_, '_, '_, 'info, MintToChecked1ofNMultisig<'info>>,
+    ctx: CpiContext<'_, '_, '_, 'info, MintToChecked1ofNMultisig<'info>>,
     amount: u64,
     decimals: u8,
 ) -> Result<()> {
-    let ix = spl_token::instruction::mint_to_checked(
+    let ix = mint_to_checked(
         ctx.program.key,
         ctx.accounts.mint.key,
         ctx.accounts.to.key,
@@ -29,9 +29,14 @@ pub fn mint_to_checked_1_of_n_multisig<'info>(
         amount,
         decimals,
     )?;
-    anchor_lang::solana_program::program::invoke_signed(
+    invoke_signed(
         &ix,
-        &[ctx.accounts.to, ctx.accounts.mint, ctx.accounts.multisig, ctx.accounts.signer],
+        &[
+            ctx.accounts.to,
+            ctx.accounts.mint,
+            ctx.accounts.multisig,
+            ctx.accounts.signer,
+        ],
         ctx.signer_seeds,
     )
     .map_err(Into::into)

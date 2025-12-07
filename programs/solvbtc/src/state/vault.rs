@@ -1,4 +1,4 @@
-use anchor_lang::prelude::{borsh::de, *};
+use anchor_lang::prelude::*;
 
 use crate::{
     constants::{MAX_FEE_BPS, MAX_NAV_GROWTH_BPS, ONE_BITCOIN},
