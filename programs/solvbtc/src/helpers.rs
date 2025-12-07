@@ -52,15 +52,11 @@ pub fn validate_nav(nav: u64) -> Result<()> {
 }
 
 pub fn validate_pubkey(address: &Pubkey) -> Result<()> {
-    if address.eq(&Pubkey::default()) {
-        return Err(SolvError::InvalidAddress.into());
-    }
+    require_keys_neq!(*address, Pubkey::default(), SolvError::InvalidAddress);
     Ok(())
 }
 
 pub fn validate_fee(value: u16) -> Result<()> {
-    if value > MAX_FEE_BPS {
-        return Err(SolvError::InvalidFeeRatio.into());
-    }
+    require_gte!(MAX_FEE_BPS, value, SolvError::InvalidFeeRatio);
     Ok(())
 }

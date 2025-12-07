@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::{MAX_FEE_BPS, MAX_NAV_GROWTH_BPS, ONE_BITCOIN},
     errors::SolvError,
-    helpers::{validate_nav, validate_pubkey},
+    helpers::{validate_fee, validate_nav, validate_pubkey},
 };
 
 #[account(discriminator = [1])]
@@ -63,7 +63,8 @@ impl Vault {
     }
 
     pub fn is_whitelisted(&self, mint: &Pubkey) -> Result<()> {
-        let is_whitelisted = self.deposit_currencies
+        let is_whitelisted = self
+            .deposit_currencies
             .iter()
             .find(|token| token.mint.eq(mint))
             .is_some();
@@ -84,7 +85,7 @@ impl Vault {
     }
 
     pub fn set_deposit_fee(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
-        require_gte!(MAX_FEE_BPS, deposit_fee, SolvError::InvalidFeeRatio);
+        validate_fee(deposit_fee)?;
         let index = self
             .deposit_currencies
             .iter()
@@ -95,12 +96,13 @@ impl Vault {
     }
 
     pub fn set_withdraw_fee(&mut self, withdraw_fee: u16) -> Result<()> {
-        require_gte!(MAX_FEE_BPS, withdraw_fee, SolvError::InvalidFeeRatio);
+        validate_fee(withdraw_fee)?;
         self.withdraw_fee = withdraw_fee;
         self.update()
     }
 
     pub fn set_fee_receiver(&mut self, fee_receiver: Pubkey) -> Result<()> {
+        validate_pubkey(&fee_receiver)?;
         self.fee_receiver = fee_receiver;
         self.update()
     }
@@ -111,6 +113,7 @@ impl Vault {
     }
 
     pub fn set_treasurer(&mut self, treasurer: Pubkey) -> Result<()> {
+        validate_pubkey(&treasurer)?;
         self.treasurer = treasurer;
         self.update()
     }

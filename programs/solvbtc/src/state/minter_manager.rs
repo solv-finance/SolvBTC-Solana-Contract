@@ -14,6 +14,7 @@ pub struct MinterManager {
 
 impl MinterManager {
     pub fn initialize(&mut self, admin: Pubkey, bump: u8) -> Result<()> {
+        validate_pubkey(&admin)?;
         self.admin = admin;
         self.bump = bump;
         self.update()
@@ -26,6 +27,7 @@ impl MinterManager {
     }
 
     pub fn transfer_admin(&mut self, admin: Pubkey) -> Result<()> {
+        validate_pubkey(&admin)?;
         self.admin = admin;
         self.update()
     }

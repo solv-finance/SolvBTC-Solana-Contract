@@ -137,12 +137,14 @@ pub mod solvbtc {
     #[instruction(discriminator = 12)]
     #[doc = "# Set Oracle NAV\nEnable admin to update the NAV of a whitelisted token in the contract."]
     pub fn vault_set_nav(ctx: Context<VaultOracleUpdate>, nav: u64) -> Result<()> {
+        ctx.accounts.validate()?;
         ctx.accounts.set_nav(nav)
     }
 
     #[instruction(discriminator = 13)]
     #[doc = "# Set Oracle NAV\nEnable admin to update the manager of an oracle."]
     pub fn vault_set_nav_manager(ctx: Context<VaultOracleUpdate>, manager: Pubkey) -> Result<()> {
+        ctx.accounts.validate()?;
         ctx.accounts.set_manager(manager)
     }
 
