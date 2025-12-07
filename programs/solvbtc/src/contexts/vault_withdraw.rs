@@ -91,7 +91,6 @@ impl<'info> VaultWithdraw<'info> {
 
         // Get withdraw amount and withdraw fee
         let (amount, fee) = Vault::calculate_fee(withdraw_request.withdraw_amount, self.vault.withdraw_fee)?;
-        msg!("Withdraw amount: {}, Fee: {}", amount, fee);
 
         // Signer seeds
         let key = self.vault.mint.key();
