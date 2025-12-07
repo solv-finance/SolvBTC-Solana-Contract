@@ -10,3 +10,5 @@ pub const ADMIN_WHITELIST: &[Pubkey] = &[
 pub const MAX_FEE_BPS: u16 = 10_000;
 #[constant]
 pub const MAX_NAV_GROWTH_BPS: u16 = 5; // 0.05%
+#[constant]
+pub const MAX_NAV_DIFF_BPS: u16 = 100; // 1%

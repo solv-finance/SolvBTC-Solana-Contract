@@ -6,7 +6,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
-use crate::{constants::{MAX_FEE_BPS}};
+use crate::{constants::{MAX_FEE_BPS, MAX_NAV_DIFF_BPS}};
 
 use solana_secp256k1_ecdsa::{SECP256K1_ECDSA_SIGNATURE_LENGTH, Secp256k1EcdsaSignature};
 
@@ -81,7 +81,7 @@ impl<'info> VaultWithdraw<'info> {
 
         // Check 1.01*nav >= nav of withdraw request
         let nav_diff: u64 = u64::try_from(u128::from(self.vault.nav)
-            .checked_mul(100 as u128)
+            .checked_mul(MAX_NAV_DIFF_BPS as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
             .checked_div(MAX_FEE_BPS.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
