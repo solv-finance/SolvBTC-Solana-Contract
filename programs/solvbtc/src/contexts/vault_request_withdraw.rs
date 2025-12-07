@@ -53,18 +53,18 @@ pub struct VaultRequestWithdraw<'info> {
 }
 
 impl<'info> VaultRequestWithdraw<'info> {
-    pub fn validate(&self) -> Result<()> {
+    pub fn validate(&self, amount: u64) -> Result<()> {
         self.vault.is_whitelisted(&self.mint_withdraw.key())?;
+
+        // Ensure no zero values are withdrawn
+        if amount.eq(&0) {
+            return Err(SolvError::InvalidAmount)?;
+        }
         
         Ok(())
     }
-    
-    pub fn burn_tokens(&mut self, amount: u64) -> Result<()> {
-        // Ensure no zero values are withdrawn
-        if amount.eq(&0) {
-            return Err(SolvError::MathOverflow)?;
-        }
 
+    pub fn burn_tokens(&mut self, amount: u64) -> Result<()> {
         let accounts = BurnChecked {
             mint: self.mint_target.to_account_info(),
             from: self.user_target_ta.to_account_info(),

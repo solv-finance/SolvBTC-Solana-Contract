@@ -27,7 +27,7 @@ pub mod solvbtc {
         amount: u64,
         min_amount_out: u64,
     ) -> Result<()> {
-        ctx.accounts.validate()?;
+        ctx.accounts.validate(amount)?;
         ctx.accounts.deposit_tokens(amount)?;
         ctx.accounts.mint_target_tokens(amount, min_amount_out)
     }
@@ -44,7 +44,7 @@ pub mod solvbtc {
         request_hash: [u8; 32],
         amount: u64,
     ) -> Result<()> {
-        ctx.accounts.validate()?;
+        ctx.accounts.validate(amount)?;
         ctx.accounts.burn_tokens(amount)?;
         ctx.accounts
             .open_request_account(request_hash, amount)

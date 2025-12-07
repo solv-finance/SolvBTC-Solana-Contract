@@ -18,6 +18,8 @@ pub enum SolvError {
     InvalidAddress,
     #[msg("SolvVault: Mint not whitelisted in vault")]
     MintNotWhitelisted,
+    #[msg("SolvVault: Invalid amount - must be > 0")]
+    InvalidAmount,
     #[msg("SolvMinterManager: Minter array full")]
     MinterArrayFull,
     #[msg("SolvMinterManager: Minter already exists")]

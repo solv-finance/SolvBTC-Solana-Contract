@@ -47,8 +47,13 @@ pub struct VaultDeposit<'info> {
 }
 
 impl<'info> VaultDeposit<'info> {
-    pub fn validate(&self) -> Result<()> {
+    pub fn validate(&self, amount: u64) -> Result<()> {
         self.vault.is_whitelisted(&self.mint_token.key())?;
+
+        // Ensure no zero values are deposited
+        if amount.eq(&0) {
+            return Err(SolvError::InvalidAmount)?;
+        }
 
         Ok(())
     }
