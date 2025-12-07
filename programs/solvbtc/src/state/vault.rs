@@ -1,6 +1,10 @@
 use anchor_lang::prelude::{borsh::de, *};
 
-use crate::{constants::{MAX_FEE_BPS, ONE_BITCOIN}, errors::SolvError, helpers::validate_nav};
+use crate::{
+    constants::{MAX_FEE_BPS, MAX_NAV_GROWTH_BPS, ONE_BITCOIN},
+    errors::SolvError,
+    helpers::validate_nav,
+};
 
 #[account(discriminator = [1])]
 #[derive(InitSpace)]
@@ -21,7 +25,7 @@ pub struct Vault {
 #[derive(Default, Clone, Copy, InitSpace, AnchorSerialize, AnchorDeserialize)]
 pub struct WhitelistedToken {
     mint: Pubkey,
-    deposit_fee: u16
+    deposit_fee: u16,
 }
 
 impl Vault {
@@ -57,9 +61,10 @@ impl Vault {
     }
 
     pub fn is_whitelisted(&self, mint: &Pubkey) -> bool {
-        self.deposit_currencies.iter().find(|token| {
-            token.mint.eq(mint)
-        }).is_some()
+        self.deposit_currencies
+            .iter()
+            .find(|token| token.mint.eq(mint))
+            .is_some()
     }
 
     pub fn update(&mut self) -> Result<()> {
@@ -74,7 +79,11 @@ impl Vault {
 
     pub fn set_deposit_fee(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
         require_gte!(MAX_FEE_BPS, deposit_fee, SolvError::InvalidFeeRatio);
-        let index = self.deposit_currencies.iter().position(|token| token.mint.eq(&currency)).ok_or(SolvError::CurrencyNotFound)?;
+        let index = self
+            .deposit_currencies
+            .iter()
+            .position(|token| token.mint.eq(&currency))
+            .ok_or(SolvError::CurrencyNotFound)?;
         self.deposit_currencies[index].deposit_fee = deposit_fee;
         self.update()
     }
@@ -112,7 +121,11 @@ impl Vault {
             .position(|&token| token.mint.eq(&Pubkey::default()))
         {
             // Check if the currency already exists in the occupied slots (0..empty_index)
-            if self.deposit_currencies[0..empty_index].iter().find(|token| token.mint.eq(&mint)).is_some() {
+            if self.deposit_currencies[0..empty_index]
+                .iter()
+                .find(|token| token.mint.eq(&mint))
+                .is_some()
+            {
                 return Err(SolvError::CurrencyAlreadyExists.into());
             }
 
@@ -142,8 +155,9 @@ impl Vault {
                 self.deposit_currencies[i] = self.deposit_currencies[i + 1];
             }
             // Set the last element to default (empty)
-            self.deposit_currencies[self.deposit_currencies.len() - 1] = WhitelistedToken::default();
-            
+            self.deposit_currencies[self.deposit_currencies.len() - 1] =
+                WhitelistedToken::default();
+
             self.update()
         } else {
             // Currency not found
@@ -152,17 +166,24 @@ impl Vault {
     }
 
     pub fn set_nav(&mut self, nav: u64) -> Result<()> {
-
         // Check nav growth/ does not exceed 0.05%
-        let nav_diff: u64 = u64::try_from(u128::from(self.nav)
-            .checked_mul(5 as u128)
-            .ok_or(ProgramError::ArithmeticOverflow)?
-            .checked_div(MAX_FEE_BPS.into())
-            .ok_or(ProgramError::ArithmeticOverflow)?)
-            .map_err(|_| ProgramError::ArithmeticOverflow)?;
-        
-        let max_nav = self.nav.checked_add(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
-        let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
+        let nav_diff: u64 = u64::try_from(
+            u128::from(self.nav)
+                .checked_mul(MAX_NAV_GROWTH_BPS as u128)
+                .ok_or(ProgramError::ArithmeticOverflow)?
+                .checked_div(MAX_FEE_BPS.into())
+                .ok_or(ProgramError::ArithmeticOverflow)?,
+        )
+        .map_err(|_| ProgramError::ArithmeticOverflow)?;
+
+        let max_nav = self
+            .nav
+            .checked_add(nav_diff)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
+        let min_nav = self
+            .nav
+            .checked_sub(nav_diff)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
         require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
         require_gte!(nav, min_nav, SolvError::InvalidNAVValue);
         validate_nav(nav)?;
@@ -183,12 +204,18 @@ impl Vault {
             .ok_or(ProgramError::ArithmeticOverflow)?
             .try_into()
             .map_err(|_| ProgramError::ArithmeticOverflow)?;
-        let amount = amount.checked_sub(fee).ok_or(ProgramError::ArithmeticOverflow)?;
+        let amount = amount
+            .checked_sub(fee)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
         Ok((amount, fee))
     }
 
     pub fn deposit_fee(&self, currency: &Pubkey) -> Result<u16> {
-        let index = self.deposit_currencies.iter().position(|token| token.mint.eq(currency)).ok_or(SolvError::CurrencyNotFound)?;
+        let index = self
+            .deposit_currencies
+            .iter()
+            .position(|token| token.mint.eq(currency))
+            .ok_or(SolvError::CurrencyNotFound)?;
         Ok(self.deposit_currencies[index].deposit_fee)
     }
 
