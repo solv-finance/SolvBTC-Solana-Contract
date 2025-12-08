@@ -6,9 +6,9 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
-use crate::{constants::{MAX_FEE}};
+use crate::{constants::{MAX_FEE_BPS, MAX_NAV_DIFF_BPS}};
 
-use solana_secp256k1_ecdsa::Secp256k1EcdsaSignature;
+use solana_secp256k1_ecdsa::{SECP256K1_ECDSA_SIGNATURE_LENGTH, Secp256k1EcdsaSignature};
 
 #[derive(Accounts)]
 #[instruction(hash: [u8;32])]
@@ -40,7 +40,6 @@ pub struct VaultWithdraw<'info> {
         mut,
         seeds = [b"vault",vault.mint.key().as_ref()],
         bump = vault.bump,
-        constraint = vault.is_whitelisted(&mint_withdraw.key())
     )]
     pub vault: Account<'info, Vault>,
     #[account(
@@ -61,7 +60,13 @@ pub struct VaultWithdraw<'info> {
 }
 
 impl<'info> VaultWithdraw<'info> {
-    pub fn withdraw_tokens(&mut self, signature: [u8;64]) -> Result<()> {
+    pub fn validate(&self) -> Result<()> {
+        self.vault.is_whitelisted(&self.mint_withdraw.key())?;
+
+        Ok(())
+    }
+
+    pub fn withdraw_tokens(&mut self, signature: [u8; SECP256K1_ECDSA_SIGNATURE_LENGTH]) -> Result<()> {
         // Get withdraw request
         let mut withdraw_request_data = &self.withdraw_request.data.borrow()[..];
         let withdraw_request = WithdrawRequest::try_deserialize(&mut withdraw_request_data)?;
@@ -76,9 +81,9 @@ impl<'info> VaultWithdraw<'info> {
 
         // Check 1.01*nav >= nav of withdraw request
         let nav_diff: u64 = u64::try_from(u128::from(self.vault.nav)
-            .checked_mul(100 as u128)
+            .checked_mul(MAX_NAV_DIFF_BPS as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
-            .checked_div(MAX_FEE.into())
+            .checked_div(MAX_FEE_BPS.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
             .map_err(|_| ProgramError::ArithmeticOverflow)?;
         let max_nav = self.vault.nav.checked_add(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
@@ -86,7 +91,6 @@ impl<'info> VaultWithdraw<'info> {
 
         // Get withdraw amount and withdraw fee
         let (amount, fee) = Vault::calculate_fee(withdraw_request.withdraw_amount, self.vault.withdraw_fee)?;
-        msg!("Withdraw amount: {}, Fee: {}", amount, fee);
 
         // Signer seeds
         let key = self.vault.mint.key();

@@ -18,7 +18,7 @@ pub mod solvbtc {
 
     // SolvBTC Vault Instructions
     //
-    // These instructions enable the creation of Solv vaults by the contract admint.
+    // These instructions enable the creation of Solv vaults by the contract admin.
     // These vaults are used to accept user deposits and handle withdrawals.
     #[instruction(discriminator = 0)]
     #[doc = "# Deposit\nEnable user to deposit accepted deposit tokens to a Solv vault and mint target token in return based upon pro-rata share of NAV."]
@@ -27,13 +27,13 @@ pub mod solvbtc {
         amount: u64,
         min_amount_out: u64,
     ) -> Result<()> {
+        ctx.accounts.validate(amount)?;
         ctx.accounts.deposit_tokens(amount)?;
         ctx.accounts.mint_target_tokens(amount, min_amount_out)
     }
 
-    // withdraw_request(shares, request hash)
-    // Check request hash has not been requested or withdrawn. Apply a second hash as the key instead of using the request hash directly, for security purposes.
-    // The second hash includes (user, withdraw token address,request hash, shares, NAV)
+    // Check that request hash has not been requested or withdrawn. Apply a second hash as the key instead of using the request hash directly, for security purposes.
+    // The second hash includes (user, withdraw token address, request hash, shares, NAV)
     // Record the second hash (hash, status)
     // User transfer target token to vault, vault burn the token
     // emit event  WithdrawRequest(user, withdraw token, shares  token address, shares, request hash, current NAV)
@@ -44,6 +44,7 @@ pub mod solvbtc {
         request_hash: [u8; 32],
         amount: u64,
     ) -> Result<()> {
+        ctx.accounts.validate(amount)?;
         ctx.accounts.burn_tokens(amount)?;
         ctx.accounts
             .open_request_account(request_hash, amount)
@@ -72,6 +73,7 @@ pub mod solvbtc {
         nav: u64,
         withdraw_fee: u16,
     ) -> Result<()> {
+        ctx.accounts.validate(admin, fee_receiver, treasurer, oracle_manager, withdraw_fee)?;
         ctx.accounts.initialize(
             admin,
             fee_receiver,
@@ -135,12 +137,14 @@ pub mod solvbtc {
     #[instruction(discriminator = 12)]
     #[doc = "# Set Oracle NAV\nEnable admin to update the NAV of a whitelisted token in the contract."]
     pub fn vault_set_nav(ctx: Context<VaultOracleUpdate>, nav: u64) -> Result<()> {
+        ctx.accounts.validate()?;
         ctx.accounts.set_nav(nav)
     }
 
     #[instruction(discriminator = 13)]
     #[doc = "# Set Oracle NAV\nEnable admin to update the manager of an oracle."]
     pub fn vault_set_nav_manager(ctx: Context<VaultOracleUpdate>, manager: Pubkey) -> Result<()> {
+        ctx.accounts.validate()?;
         ctx.accounts.set_manager(manager)
     }
 
@@ -154,6 +158,7 @@ pub mod solvbtc {
         ctx: Context<MinterManagerInitialize>,
         admin: Pubkey,
     ) -> Result<()> {
+        ctx.accounts.validate()?;
         ctx.accounts.initialize(admin, ctx.bumps.minter_manager)
     }
 

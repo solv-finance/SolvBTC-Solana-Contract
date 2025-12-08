@@ -40,7 +40,6 @@ pub struct VaultDeposit<'info> {
         mut,
         seeds = [b"vault", mint_target.key().as_ref()],
         bump = vault.bump,
-        constraint = vault.is_whitelisted(&mint_token.key()),
     )]
     pub vault: Account<'info, Vault>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -48,6 +47,17 @@ pub struct VaultDeposit<'info> {
 }
 
 impl<'info> VaultDeposit<'info> {
+    pub fn validate(&self, amount: u64) -> Result<()> {
+        self.vault.is_whitelisted(&self.mint_token.key())?;
+
+        // Ensure no zero values are deposited
+        if amount.eq(&0) {
+            return Err(SolvError::InvalidAmount)?;
+        }
+
+        Ok(())
+    }
+
     pub fn deposit_tokens(&mut self, amount: u64) -> Result<()> {
         let accounts = TransferChecked {
             from: self.user_token_ta.to_account_info(),

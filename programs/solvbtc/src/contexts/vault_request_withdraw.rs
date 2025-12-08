@@ -45,7 +45,6 @@ pub struct VaultRequestWithdraw<'info> {
         mut,
         seeds = [b"vault", mint_target.key().as_ref()],
         bump = vault.bump,
-        constraint = vault.is_whitelisted(&mint_withdraw.key())
     )]
     pub vault: Account<'info, Vault>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -54,12 +53,18 @@ pub struct VaultRequestWithdraw<'info> {
 }
 
 impl<'info> VaultRequestWithdraw<'info> {
-    pub fn burn_tokens(&mut self, amount: u64) -> Result<()> {
+    pub fn validate(&self, amount: u64) -> Result<()> {
+        self.vault.is_whitelisted(&self.mint_withdraw.key())?;
+
         // Ensure no zero values are withdrawn
         if amount.eq(&0) {
-            return Err(SolvError::MathOverflow)?;
+            return Err(SolvError::InvalidAmount)?;
         }
+        
+        Ok(())
+    }
 
+    pub fn burn_tokens(&mut self, amount: u64) -> Result<()> {
         let accounts = BurnChecked {
             mint: self.mint_target.to_account_info(),
             from: self.user_target_ta.to_account_info(),

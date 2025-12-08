@@ -1,5 +1,10 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::spl_token;
+use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
+use anchor_spl::token::spl_token::instruction::mint_to_checked;
+
+use crate::{
+    constants::{ADMIN_WHITELIST, MAX_FEE_BPS, ONE_BITCOIN},
+    errors::SolvError,
+};
 
 #[derive(Accounts)]
 pub struct MintToChecked1ofNMultisig<'info> {
@@ -14,11 +19,11 @@ pub struct MintToChecked1ofNMultisig<'info> {
 }
 
 pub fn mint_to_checked_1_of_n_multisig<'info>(
-    ctx: anchor_lang::prelude::CpiContext<'_, '_, '_, 'info, MintToChecked1ofNMultisig<'info>>,
+    ctx: CpiContext<'_, '_, '_, 'info, MintToChecked1ofNMultisig<'info>>,
     amount: u64,
     decimals: u8,
 ) -> Result<()> {
-    let ix = spl_token::instruction::mint_to_checked(
+    let ix = mint_to_checked(
         ctx.program.key,
         ctx.accounts.mint.key,
         ctx.accounts.to.key,
@@ -27,10 +32,39 @@ pub fn mint_to_checked_1_of_n_multisig<'info>(
         amount,
         decimals,
     )?;
-    anchor_lang::solana_program::program::invoke_signed(
+    invoke_signed(
         &ix,
-        &[ctx.accounts.to, ctx.accounts.mint, ctx.accounts.multisig, ctx.accounts.signer],
+        &[
+            ctx.accounts.to,
+            ctx.accounts.mint,
+            ctx.accounts.multisig,
+            ctx.accounts.signer,
+        ],
         ctx.signer_seeds,
     )
     .map_err(Into::into)
+}
+
+pub fn validate_nav(nav: u64) -> Result<()> {
+    require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+
+    Ok(())
+}
+
+pub fn validate_pubkey(address: &Pubkey) -> Result<()> {
+    require_keys_neq!(*address, Pubkey::default(), SolvError::InvalidAddress);
+    Ok(())
+}
+
+pub fn validate_fee(value: u16) -> Result<()> {
+    require_gte!(MAX_FEE_BPS, value, SolvError::InvalidFeeRatio);
+    Ok(())
+}
+
+pub fn validate_authority(authority: &Pubkey) -> Result<()> {
+    require!(
+        ADMIN_WHITELIST.contains(&authority),
+        SolvError::UnauthorizedAdmin
+    );
+    Ok(())
 }

@@ -1,4 +1,4 @@
-use crate::{constants::ADMIN_WHITELIST, state::MinterManager};
+use crate::{helpers::validate_authority, state::MinterManager};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::Mint;
 
@@ -7,7 +7,6 @@ pub struct MinterManagerInitialize<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     /// Separate authority from payer to support multisig and PDA signers
-    #[account(constraint = ADMIN_WHITELIST.contains(&authority.key()))]
     pub authority: Signer<'info>,
     pub mint: InterfaceAccount<'info, Mint>,
     #[account(
@@ -28,6 +27,12 @@ pub struct MinterManagerInitialize<'info> {
 }
 
 impl<'info> MinterManagerInitialize<'info> {
+    pub fn validate(&self) -> Result<()> {
+        validate_authority(&self.authority.key())?;
+
+        Ok(())
+    }
+
     pub fn initialize(&mut self, admin: Pubkey, bump: u8) -> Result<()> {
         self.minter_manager.initialize(admin, bump)
     }

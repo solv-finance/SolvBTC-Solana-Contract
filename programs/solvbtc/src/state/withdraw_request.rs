@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use solana_secp256k1::UncompressedPoint;
+use solana_nostd_sha256::HASH_LENGTH;
+use solana_secp256k1::{Secp256k1Point, UncompressedPoint};
 use solana_secp256k1_ecdsa::{hash::sha256::Sha256, Secp256k1EcdsaSignature};
 
 use crate::events::WithdrawRequestEvent;
@@ -55,14 +56,14 @@ impl WithdrawRequest {
         Ok(())
     }
 
-    pub fn verify_signature(&self, signature: Secp256k1EcdsaSignature, verifier: [u8;64]) -> Result<()> {
+    pub fn verify_signature(&self, signature: Secp256k1EcdsaSignature, verifier: [u8; UncompressedPoint::SIZE]) -> Result<()> {
         Ok(signature
             .normalize_s()
             .verify::<Sha256, UncompressedPoint>(&self.hash(), UncompressedPoint(verifier))
             .map_err(|_| ProgramError::MissingRequiredSignature)?)
     }
     
-    pub fn hash(&self) -> [u8;32] {
+    pub fn hash(&self) -> [u8; HASH_LENGTH] {
         solana_nostd_sha256::hashv(&[
             self.user.as_ref(),
             self.withdraw_token.as_ref(),

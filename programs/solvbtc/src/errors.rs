@@ -16,6 +16,10 @@ pub enum SolvError {
     SlippageExceeded,
     #[msg("SolvVault: Invalid address")]
     InvalidAddress,
+    #[msg("SolvVault: Mint not whitelisted in vault")]
+    MintNotWhitelisted,
+    #[msg("SolvVault: Invalid amount - must be > 0")]
+    InvalidAmount,
     #[msg("SolvMinterManager: Minter array full")]
     MinterArrayFull,
     #[msg("SolvMinterManager: Minter already exists")]
@@ -30,4 +34,6 @@ pub enum SolvError {
     MathOverflow,
     #[msg("SolvOracle: Invalid Max NAV Change - must be <=10,000")]
     InvalidMaxNavChange,
+    #[msg("SolvWhitelist: Unauthorized admin")]
+    UnauthorizedAdmin,
 }
