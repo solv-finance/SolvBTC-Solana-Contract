@@ -115,4 +115,16 @@ The test suite covers:
 - Fee calculations and transfers
 - Oracle NAV management
 
-Run tests with: `anchor test`
+Setup:
+
+1) Install [Surfpool](https://surfpool.run/)
+2) Install [Bun](https://bun.sh/)
+3) Generate a new keypair and save it at `./whitelisted-admin-wallet.json`, no funding required
+4) In `programs/solvbtc/src/constants.rs`, replace the address in `ADMIN_WHITELIST` with the address of `authority-keypair-wallet.json`
+5) Sync program ID: `anchor keys sync`
+6) Build program: `anchor build`
+
+To run the tests:
+
+1) In another terminal, start Surfpool: `bun run surfpool:start`
+2) Run all tests: `bun test`
