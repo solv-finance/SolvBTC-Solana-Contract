@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::spl_token;
 
+use crate::{constants::ONE_BITCOIN, errors::SolvError};
+
 #[derive(Accounts)]
 pub struct MintToChecked1ofNMultisig<'info> {
     /// CHECK: This is safe
@@ -33,4 +35,10 @@ pub fn mint_to_checked_1_of_n_multisig<'info>(
         ctx.signer_seeds,
     )
     .map_err(Into::into)
+}
+
+pub fn validate_nav(nav: u64) -> Result<()> {
+    require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+
+    Ok(())
 }

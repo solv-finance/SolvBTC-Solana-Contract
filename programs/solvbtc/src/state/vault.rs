@@ -1,6 +1,6 @@
 use anchor_lang::prelude::{borsh::de, *};
 
-use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError};
+use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError, helpers::validate_nav};
 
 #[account(discriminator = [1])]
 #[derive(InitSpace)]
@@ -38,7 +38,7 @@ impl Vault {
         withdraw_fee: u16,
         bump: u8,
     ) -> Result<()> {
-        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        validate_nav(nav)?;
         require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
         *self = Vault {
             admin,
@@ -165,7 +165,7 @@ impl Vault {
         let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
         require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
         require_gte!(nav, min_nav, SolvError::InvalidNAVValue);
-        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        validate_nav(nav)?;
         self.nav = nav;
         self.update()
     }
@@ -207,7 +207,7 @@ impl Vault {
     /// Calculate withdrawal amount from shares to burn
     /// shares * nav / ONE_BITCOIN = withdrawal_amount
     pub fn withdrawal_from_shares(&self, shares: u64) -> Result<u64> {
-        require_gte!(self.nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        validate_nav(self.nav)?;
         u128::from(shares)
             .checked_mul(self.nav.into())
             .ok_or(ProgramError::ArithmeticOverflow)?
