@@ -165,6 +165,7 @@ impl Vault {
         let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
         require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
         require_gte!(nav, min_nav, SolvError::InvalidNAVValue);
+        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
         self.nav = nav;
         self.update()
     }
