@@ -1,0 +1,27 @@
+
+action "solvbtc_deposit_event" "svm::deploy_subgraph" {
+    program_id = action.deploy_solvbtc.program_id
+    program_idl = action.deploy_solvbtc.program_idl
+    block_height = 0 // action.deploy_solvbtc.block_height
+    event {
+        name = "DepositEvent"
+    }
+}
+
+action "solvbtc_withdraw_event" "svm::deploy_subgraph" {
+    program_id = action.deploy_solvbtc.program_id
+    program_idl = action.deploy_solvbtc.program_idl
+    block_height = 0 // action.deploy_solvbtc.block_height
+    event {
+        name = "WithdrawEvent"
+    }
+}
+
+action "solvbtc_withdraw_request_event" "svm::deploy_subgraph" {
+    program_id = action.deploy_solvbtc.program_id
+    program_idl = action.deploy_solvbtc.program_idl
+    block_height = 0 // action.deploy_solvbtc.block_height
+    event {
+        name = "WithdrawRequestEvent"
+    }
+}
