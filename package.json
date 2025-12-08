@@ -3,7 +3,8 @@
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "surfpool:start": "surfpool start --offline --watch"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
