@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
 use anchor_spl::token::spl_token::instruction::mint_to_checked;
 
 use crate::{
-    constants::{MAX_FEE_BPS, ONE_BITCOIN},
+    constants::{ADMIN_WHITELIST, MAX_FEE_BPS, ONE_BITCOIN},
     errors::SolvError,
 };
 
@@ -58,5 +58,13 @@ pub fn validate_pubkey(address: &Pubkey) -> Result<()> {
 
 pub fn validate_fee(value: u16) -> Result<()> {
     require_gte!(MAX_FEE_BPS, value, SolvError::InvalidFeeRatio);
+    Ok(())
+}
+
+pub fn validate_authority(authority: &Pubkey) -> Result<()> {
+    require!(
+        ADMIN_WHITELIST.contains(&authority),
+        SolvError::UnauthorizedAdmin
+    );
     Ok(())
 }

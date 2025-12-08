@@ -158,6 +158,7 @@ pub mod solvbtc {
         ctx: Context<MinterManagerInitialize>,
         admin: Pubkey,
     ) -> Result<()> {
+        ctx.accounts.validate()?;
         ctx.accounts.initialize(admin, ctx.bumps.minter_manager)
     }
 

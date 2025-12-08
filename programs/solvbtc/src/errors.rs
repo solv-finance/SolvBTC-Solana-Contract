@@ -34,4 +34,6 @@ pub enum SolvError {
     MathOverflow,
     #[msg("SolvOracle: Invalid Max NAV Change - must be <=10,000")]
     InvalidMaxNavChange,
+    #[msg("SolvWhitelist: Unauthorized admin")]
+    UnauthorizedAdmin,
 }

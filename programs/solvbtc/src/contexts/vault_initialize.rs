@@ -1,6 +1,5 @@
 use crate::{
-    constants::ADMIN_WHITELIST,
-    helpers::{validate_fee, validate_pubkey},
+    helpers::{validate_authority, validate_fee, validate_pubkey},
     state::Vault,
 };
 use anchor_lang::prelude::*;
@@ -11,7 +10,6 @@ pub struct VaultInitialize<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     /// Separate authority from payer to support multisig and PDA signers
-    #[account(constraint = ADMIN_WHITELIST.contains(&authority.key()))]
     pub authority: Signer<'info>,
     pub mint: InterfaceAccount<'info, Mint>,
     #[account(
@@ -34,6 +32,7 @@ impl<'info> VaultInitialize<'info> {
         oracle_manager: Pubkey,
         withdraw_fee: u16,
     ) -> Result<()> {
+        validate_authority(&self.authority.key())?;
         validate_pubkey(&admin)?;
         validate_pubkey(&fee_receiver)?;
         validate_pubkey(&treasurer)?;
