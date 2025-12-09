@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use anchor_lang::prelude::{borsh::de, *};
 
 use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError};
@@ -183,7 +185,7 @@ impl Vault {
             .ok_or(ProgramError::ArithmeticOverflow)?
             .try_into()
             .map_err(|_| ProgramError::ArithmeticOverflow)?;
-        let amount = amount.checked_sub(fee).ok_or(ProgramError::ArithmeticOverflow)?;
+        let amount = amount.checked_sub(max(fee, 1)).ok_or(ProgramError::ArithmeticOverflow)?;
         Ok((amount, fee))
     }
 
