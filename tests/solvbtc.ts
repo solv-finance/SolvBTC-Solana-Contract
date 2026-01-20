@@ -765,7 +765,7 @@ describe("solvbtc", () => {
   })
 
   it("Process withdraw request", async () => {
-    const withdrawRequestData = await program.account.withdrawRequest.fetch(withdrawRequest);
+    const withdrawRequestData = await program.account.withdrawRequestV2.fetch(withdrawRequest);
 
     const verifierHash = deriveWithdrawRequestEip191(
       user,
@@ -773,13 +773,14 @@ describe("solvbtc", () => {
       hash,
       withdrawRequestData.shares,
       withdrawRequestData.nav,
+      withdrawRequestData.slot,
     )
 
     const signature = createEip191WithdrawSig(
       verifierKeypair,
       verifierHash
     )
-    const ix = await program.methods.vaultWithdraw(
+    const ix = await program.methods.vaultWithdrawV2(
       Array.from(hash),
       signature.signature
     )

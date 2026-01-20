@@ -1,5 +1,5 @@
 use crate::events::WithdrawEvent;
-use crate::state::{Vault, WithdrawRequest};
+use crate::state::{Vault, WithdrawRequest, WithdrawRequestV2};
 use crate::errors::SolvError;
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -129,6 +129,80 @@ impl<'info> VaultWithdraw<'info> {
             withdraw_amount:amount, 
             withdraw_token: self.mint_withdraw.key(), 
             request_hash: withdraw_request.request_hash, 
+            withdraw_fee: fee,
+        });
+
+        Ok(())
+    }
+
+    pub fn withdraw_tokens_v2(&mut self, signature: [u8;64]) -> Result<()> {
+        // Get withdraw request
+        let mut withdraw_request_data = &self.withdraw_request.data.borrow()[..];
+        let withdraw_request = WithdrawRequestV2::try_deserialize(&mut withdraw_request_data)?;
+
+        // Verify withdraw account address;
+        if self.user_withdraw_ta.key().ne(&withdraw_request.withdraw_token_account) {
+            return Err(SolvError::InvalidAddress)?;
+        }
+
+        // Verify signature
+        withdraw_request.verify_eip191(Secp256k1EcdsaSignature(signature), self.vault.verifier)?;
+
+        // Check 1.01*nav >= nav of withdraw request
+        let nav_diff: u64 = u64::try_from(u128::from(self.vault.nav)
+            .checked_mul(100 as u128)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .checked_div(MAX_FEE.into())
+            .ok_or(ProgramError::ArithmeticOverflow)?)
+            .map_err(|_| ProgramError::ArithmeticOverflow)?;
+        let max_nav = self.vault.nav.checked_add(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
+        require_gte!(max_nav, withdraw_request.nav, SolvError::NAVExceeded);
+
+        // Get withdraw amount and withdraw fee
+        let (amount, fee) = Vault::calculate_fee(withdraw_request.withdraw_amount, self.vault.withdraw_fee)?;
+        msg!("Withdraw amount: {}, Fee: {}", amount, fee);
+
+        // Signer seeds
+        let key = self.vault.mint.key();
+        let bump = [self.vault.bump];
+        let signer_seeds: [&[&[u8]]; 1] = [&[b"vault", key.as_ref(), bump.as_ref()]];
+        // Withdraw fee
+        let accounts = TransferChecked {
+            from: self.vault_withdraw_ta.to_account_info(),
+            to: self.fee_receiver_ta.to_account_info(),
+            mint: self.mint_withdraw.to_account_info(),
+            authority: self.vault.to_account_info(),
+        };
+
+        let ctx = CpiContext::new_with_signer(
+            self.token_program.to_account_info(),
+            accounts,
+            &signer_seeds,
+        );
+
+        transfer_checked(ctx, fee, self.mint_withdraw.decimals)?;
+
+        // Withdraw amount
+        let accounts = TransferChecked {
+            from: self.vault_withdraw_ta.to_account_info(),
+            to: self.user_withdraw_ta.to_account_info(),
+            mint: self.mint_withdraw.to_account_info(),
+            authority: self.vault.to_account_info(),
+        };
+
+        let ctx = CpiContext::new_with_signer(
+            self.token_program.to_account_info(),
+            accounts,
+            &signer_seeds,
+        );
+
+        transfer_checked(ctx, amount, self.mint_withdraw.decimals)?;
+
+        emit!(WithdrawEvent {
+            user: self.user.key(),
+            withdraw_amount:amount,
+            withdraw_token: self.mint_withdraw.key(),
+            request_hash: withdraw_request.request_hash,
             withdraw_fee: fee,
         });
 

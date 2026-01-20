@@ -189,4 +189,15 @@ pub mod solvbtc {
     ) -> Result<()> {
         ctx.accounts.transfer_admin(admin)
     }
+
+    #[instruction(discriminator = 19)]
+    #[doc = "# Withdraw\nEnable user to process a withdrawal with a signed withdraw request v2."]
+    pub fn vault_withdraw_v2(
+        ctx: Context<VaultWithdraw>,
+        _hash: [u8; 32],
+        signature: [u8; 64],
+    ) -> Result<()> {
+        ctx.accounts.withdraw_tokens_v2(signature)?;
+        ctx.accounts.close_request_account()
+    }
 }
