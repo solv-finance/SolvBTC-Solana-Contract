@@ -1,11 +1,13 @@
-use crate::{errors::SolvError, events::DepositEvent, helpers::{mint_to_checked_1_of_n_multisig, MintToChecked1ofNMultisig}, state::Vault};
+use crate::{
+    errors::SolvError,
+    events::DepositEvent,
+    helpers::{mint_to_checked_1_of_n_multisig, MintToChecked1ofNMultisig},
+    state::Vault,
+};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        transfer_checked, Mint, TokenAccount, TokenInterface,
-        TransferChecked,
-    },
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
 #[derive(Accounts)]
@@ -43,6 +45,12 @@ pub struct VaultDeposit<'info> {
         constraint = vault.is_whitelisted(&mint_token.key()),
     )]
     pub vault: Account<'info, Vault>,
+    #[account(
+        mut,
+        associated_token::authority = vault.fee_receiver,
+        associated_token::mint = mint_target
+    )]
+    pub fee_receiver_ta: Box<InterfaceAccount<'info, TokenAccount>>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
@@ -62,7 +70,10 @@ impl<'info> VaultDeposit<'info> {
     }
 
     pub fn mint_target_tokens(&mut self, amount: u64, min_amount_out: u64) -> Result<()> {
-        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.deposit_fee(&self.mint_token.key())?)?;
+        let (mint_amount, fee_amount) = Vault::calculate_fee(
+            self.vault.shares_from_deposit(amount)?,
+            self.vault.deposit_fee(&self.mint_token.key())?,
+        )?;
 
         // Slippage protection
         require_gte!(mint_amount, min_amount_out, SolvError::SlippageExceeded);
@@ -74,17 +85,37 @@ impl<'info> VaultDeposit<'info> {
             multisig: self.multisig.to_account_info(),
             signer: self.vault.to_account_info(),
         };
-        
+
         // Create PDA signer seeds for the multisig operation
-        let signer_seeds: [&[&[u8]];1] = [&[b"vault".as_ref(), self.mint_target.to_account_info().key.as_ref(), &[self.vault.bump]]];
+        let signer_seeds: [&[&[u8]]; 1] = [&[
+            b"vault".as_ref(),
+            self.mint_target.to_account_info().key.as_ref(),
+            &[self.vault.bump],
+        ]];
 
         let ctx = CpiContext::new_with_signer(
-            self.token_program.to_account_info(), 
+            self.token_program.to_account_info(),
             accounts,
-            &signer_seeds
+            &signer_seeds,
         );
 
         mint_to_checked_1_of_n_multisig(ctx, mint_amount, self.mint_target.decimals)?;
+
+        // Deposit fee
+        let accounts = MintToChecked1ofNMultisig {
+            mint: self.mint_target.to_account_info(),
+            to: self.fee_receiver_ta.to_account_info(),
+            multisig: self.multisig.to_account_info(),
+            signer: self.vault.to_account_info(),
+        };
+
+        let ctx = CpiContext::new_with_signer(
+            self.token_program.to_account_info(),
+            accounts,
+            &signer_seeds,
+        );
+
+        mint_to_checked_1_of_n_multisig(ctx, fee_amount, self.mint_target.decimals)?;
 
         emit!(DepositEvent {
             user: self.user.key(),
