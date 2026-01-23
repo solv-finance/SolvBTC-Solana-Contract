@@ -86,10 +86,10 @@ export function deriveWithdrawRequestSigningHash(user: PublicKey, mint: PublicKe
   ]))
 }
 
-export function deriveWithdrawRequestEip191(user: PublicKey, mint: PublicKey, hash: Uint8Array, share:BN, nav: BN, slot:BN): Uint8Array{
+export function deriveWithdrawRequestEip191(user: PublicKey, mint: PublicKey, hash: Uint8Array, share:BN, nav: BN, vaultMint:PublicKey): Uint8Array{
   let prefix = "\x19Ethereum Signed Message:\n";
   let msg = user.toBase58() +"\n" + mint.toBase58() +"\n" + bs58.encode(hash) + "\n" 
-  + Number(share).toString() + "\n" + Number(nav).toString() +"\n" + Number(slot).toString();
+  + Number(share).toString() + "\n" + Number(nav).toString() +"\n" + vaultMint.toBase58();
   let eip191Msg = prefix + msg.length.toString() + msg;
   console.log(eip191Msg);
   return Buffer.from(eip191Msg);

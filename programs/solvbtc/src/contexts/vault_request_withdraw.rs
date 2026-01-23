@@ -87,6 +87,7 @@ impl<'info> VaultRequestWithdraw<'info> {
             shares,
             request_hash,
             self.vault.nav,
+            self.vault.mint,
         )
     }
 }

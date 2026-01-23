@@ -20,7 +20,7 @@ pub struct WithdrawRequestEventV2 {
     pub shares: u64,
     pub request_hash: [u8; 32],
     pub nav: u64,
-    pub slot: u64,
+    pub mint: Pubkey,
 }
 
 #[event]

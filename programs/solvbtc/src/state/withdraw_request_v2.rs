@@ -16,7 +16,7 @@ pub struct WithdrawRequestV2 {
     pub shares: u64,
     pub request_hash: [u8; 32],
     pub nav: u64,
-    pub slot: u64
+    pub mint: Pubkey
 }
 
 impl WithdrawRequestV2 {
@@ -31,9 +31,8 @@ impl WithdrawRequestV2 {
         shares: u64,
         request_hash: [u8; 32],
         nav: u64,
+        mint: Pubkey
     ) -> Result<()> {
-        let clock = Clock::get()?;
-        let slot = clock.slot;
 
         *self = WithdrawRequestV2 {
             user,
@@ -44,7 +43,7 @@ impl WithdrawRequestV2 {
             shares,
             request_hash,
             nav,
-            slot,
+            mint,
         };
 
         // Emit initialize event
@@ -56,7 +55,7 @@ impl WithdrawRequestV2 {
             shares,
             request_hash,
             nav,
-            slot
+            mint
         });
 
         Ok(())
@@ -75,7 +74,7 @@ impl WithdrawRequestV2 {
         encode_pubkey(&self.request_hash).str() + "\n" +
         &self.shares.to_string() + "\n" +
         &self.nav.to_string() + "\n" +
-        &self.slot.to_string();
+        &self.mint.to_string();
         data
     }
 

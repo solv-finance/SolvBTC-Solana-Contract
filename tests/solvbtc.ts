@@ -773,7 +773,7 @@ describe("solvbtc", () => {
       hash,
       withdrawRequestData.shares,
       withdrawRequestData.nav,
-      withdrawRequestData.slot,
+      withdrawRequestData.mint,
     )
 
     const signature = createEip191WithdrawSig(
