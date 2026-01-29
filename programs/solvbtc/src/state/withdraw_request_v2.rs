@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use solana_secp256k1::UncompressedPoint;
-use solana_secp256k1_ecdsa::{hash::sha256::Sha256, Secp256k1EcdsaSignature, hash::keccak::Keccak};
+use solana_secp256k1_ecdsa::{Secp256k1EcdsaSignature, hash::keccak::Keccak};
 use const_crypto::bs58::{encode_pubkey};
 
 use crate::events::WithdrawRequestEventV2;
