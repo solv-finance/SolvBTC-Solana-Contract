@@ -187,6 +187,7 @@ impl Vault {
         let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
         require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
         require_gte!(nav, min_nav, SolvError::InvalidNAVValue);
+        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
         let slot = Clock::get()?;
         // Check 24-hour update frequency limit
         require_gte!(slot.unix_timestamp, self.oracle_updated + FREEZE_PERIOD , SolvError::NavUpdateTooFrequent);
