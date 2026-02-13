@@ -3,9 +3,7 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct MinterManagerUpdateMinter<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    /// Separate authority from payer to support multisig and PDA signers
+
     pub admin: Signer<'info>,
     #[account(
         mut,

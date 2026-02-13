@@ -4,8 +4,7 @@ use anchor_spl::token_interface::Mint;
 
 #[derive(Accounts)]
 pub struct VaultUpdate<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
+
     /// Separate authority from payer to support multisig and PDA signers
     pub admin: Signer<'info>,
     pub mint: InterfaceAccount<'info, Mint>,
@@ -16,7 +15,6 @@ pub struct VaultUpdate<'info> {
         bump = vault.bump
     )]
     pub vault: Account<'info, Vault>,
-    pub system_program: Program<'info, System>,
 }
 
 impl<'info> VaultUpdate<'info> {

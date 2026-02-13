@@ -1,4 +1,4 @@
-use crate::{errors::SolvError, state::Vault};
+use crate::{errors::SolvError, state::Vault, constants::ONE_BITCOIN};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -11,6 +11,7 @@ pub struct VaultOracleUpdate<'info> {
 impl<'info> VaultOracleUpdate<'info> {
     pub fn set_nav(&mut self, nav: u64) -> Result<()> {
         require_keys_eq!(self.vault.oracle_manager, self.oracle_manager.key(), SolvError::InvalidAddress);
+        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
         self.vault.set_nav(nav)
     }
     

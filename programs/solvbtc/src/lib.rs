@@ -18,7 +18,7 @@ pub mod solvbtc {
 
     // SolvBTC Vault Instructions
     //
-    // These instructions enable the creation of Solv vaults by the contract admint.
+    // These instructions enable the creation of Solv vaults by the contract admin.
     // These vaults are used to accept user deposits and handle withdrawals.
     #[instruction(discriminator = 0)]
     #[doc = "# Deposit\nEnable user to deposit accepted deposit tokens to a Solv vault and mint target token in return based upon pro-rata share of NAV."]
@@ -36,7 +36,7 @@ pub mod solvbtc {
     // The second hash includes (user, withdraw token address,request hash, shares, NAV)
     // Record the second hash (hash, status)
     // User transfer target token to vault, vault burn the token
-    // emit event  WithdrawRequest(user, withdraw token, shares  token address, shares, request hash, current NAV)
+    // emit event  WithdrawRequest(user, withdraw token, amount,  token address, shares, request hash, current NAV)
     #[instruction(discriminator = 1)]
     #[doc = "# Withdraw Request\nEnable user to request a withdrawal in a certain currency and record it onchain."]
     pub fn vault_withdraw_request(

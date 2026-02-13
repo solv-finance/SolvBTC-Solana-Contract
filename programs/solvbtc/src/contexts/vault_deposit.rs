@@ -1,5 +1,5 @@
 use crate::{errors::SolvError, events::DepositEvent, helpers::{mint_to_checked_1_of_n_multisig, MintToChecked1ofNMultisig}, state::Vault};
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::last_restart_slot::LastRestartSlot};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
@@ -10,7 +10,7 @@ use anchor_spl::{
 
 #[derive(Accounts)]
 pub struct VaultDeposit<'info> {
-    #[account(mut)]
+
     pub user: Signer<'info>,
     #[account(
         mut,
@@ -37,7 +37,7 @@ pub struct VaultDeposit<'info> {
     #[account(mut)]
     pub mint_target: Box<InterfaceAccount<'info, Mint>>,
     #[account(
-        mut,
+
         seeds = [b"vault", mint_target.key().as_ref()],
         bump = vault.bump,
         constraint = vault.is_whitelisted(&mint_token.key()),
@@ -55,6 +55,9 @@ impl<'info> VaultDeposit<'info> {
             to: self.treasurer_token_ta.to_account_info(),
             authority: self.user.to_account_info(),
         };
+        let clock = Clock::get()?;
+        let last_restart = LastRestartSlot::get()?;
+        require_gte!(clock.slot, last_restart.last_restart_slot);
 
         let ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
 
