@@ -31,7 +31,7 @@ pub mod solvbtc {
         ctx.accounts.mint_target_tokens(amount, min_amount_out)
     }
 
-    // withdraw_request(shares, request hash)
+    // vault_withdraw_request(shares, request hash)
     // Check request hash has not been requested or withdrawn. Apply a second hash as the key instead of using the request hash directly, for security purposes.
     // The second hash includes (user, withdraw token address,request hash, shares, NAV)
     // Record the second hash (hash, status)
@@ -182,7 +182,7 @@ pub mod solvbtc {
     }
 
     #[instruction(discriminator = 18)]
-    #[doc = "# Transfer Minter Manager Admin\nEnable admin to transfer admin priveleges to a new address."]
+    #[doc = "# Transfer Minter Manager Admin\nEnable admin to transfer admin privileges to a new address."]
     pub fn minter_manager_transfer_admin(
         ctx: Context<MinterManagerTransferAdmin>,
         admin: Pubkey,

@@ -65,7 +65,7 @@ impl MinterManager {
 
         // Find the minter, if it exists
         if let Some(index) = self.minters.iter().position(|&pubkey| pubkey == minter) {
-            // Shift all elements after the found index up by one position
+            // Shift all elements after the found index down by one position
             for i in index..self.minters.len() - 1 {
                 self.minters[i] = self.minters[i + 1];
             }

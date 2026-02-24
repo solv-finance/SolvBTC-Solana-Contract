@@ -160,7 +160,7 @@ impl Vault {
             .iter()
             .position(|&token| token.mint.eq(&currency))
         {
-            // Shift all elements after the found index up by one position
+            // Shift all elements after the found index down by one position
             for i in index..self.deposit_currencies.len() - 1 {
                 self.deposit_currencies[i] = self.deposit_currencies[i + 1];
             }
