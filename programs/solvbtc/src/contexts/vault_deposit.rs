@@ -63,7 +63,7 @@ impl<'info> VaultDeposit<'info> {
     }
 
     pub fn mint_target_tokens(&mut self, amount: u64, min_amount_out: u64) -> Result<()> {
-        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.deposit_fee(&self.mint_token.key())?)?;
+        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.get_deposit_fee(&self.mint_token.key())?)?;
 
         // Slippage protection
         require_gte!(mint_amount, min_amount_out, SolvError::SlippageExceeded);

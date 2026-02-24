@@ -1,6 +1,6 @@
 use anchor_lang::prelude::{borsh::de, *};
 
-use crate::{constants::{MAX_FEE, ONE_BITCOIN, FREEZE_PERIOD}, errors::SolvError};
+use crate::{constants::{MAX_FEE, ONE_BITCOIN, FREEZE_PERIOD, DELTA}, errors::SolvError};
 
 #[account(discriminator = [1])]
 #[derive(InitSpace)]
@@ -177,7 +177,7 @@ impl Vault {
     pub fn set_nav(&mut self, nav: u64) -> Result<()> {
         // Check nav growth/decrease does not exceed 0.05%
         let nav_diff: u64 = u64::try_from(u128::from(self.nav)
-            .checked_mul(5 as u128)
+            .checked_mul(DELTA as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
             .checked_div(MAX_FEE.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
@@ -213,7 +213,7 @@ impl Vault {
         Ok((amount, fee))
     }
 
-    pub fn deposit_fee(&self, currency: &Pubkey) -> Result<u16> {
+    pub fn get_deposit_fee(&self, currency: &Pubkey) -> Result<u16> {
         let index = self.deposit_currencies.iter().position(|token| token.mint.eq(currency)).ok_or(SolvError::CurrencyNotFound)?;
         Ok(self.deposit_currencies[index].deposit_fee)
     }
