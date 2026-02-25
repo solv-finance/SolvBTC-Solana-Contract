@@ -29,7 +29,7 @@ pub fn mint_to_checked_1_of_n_multisig<'info>(
     )?;
     anchor_lang::solana_program::program::invoke_signed(
         &ix,
-        &[ctx.accounts.to, ctx.accounts.mint, ctx.accounts.multisig, ctx.accounts.signer],
+        &[ctx.accounts.mint, ctx.accounts.to, ctx.accounts.multisig, ctx.accounts.signer],
         ctx.signer_seeds,
     )
     .map_err(Into::into)
