@@ -18,7 +18,7 @@ pub mod solvbtc {
 
     // SolvBTC Vault Instructions
     //
-    // These instructions enable the creation of Solv vaults by the contract admint.
+    // These instructions enable the creation of Solv vaults by the contract admin.
     // These vaults are used to accept user deposits and handle withdrawals.
     #[instruction(discriminator = 0)]
     #[doc = "# Deposit\nEnable user to deposit accepted deposit tokens to a Solv vault and mint target token in return based upon pro-rata share of NAV."]
@@ -31,12 +31,12 @@ pub mod solvbtc {
         ctx.accounts.mint_target_tokens(amount, min_amount_out)
     }
 
-    // withdraw_request(shares, request hash)
+    // vault_withdraw_request(shares, request hash)
     // Check request hash has not been requested or withdrawn. Apply a second hash as the key instead of using the request hash directly, for security purposes.
     // The second hash includes (user, withdraw token address,request hash, shares, NAV)
     // Record the second hash (hash, status)
     // User transfer target token to vault, vault burn the token
-    // emit event  WithdrawRequest(user, withdraw token, shares  token address, shares, request hash, current NAV)
+    // emit event  WithdrawRequest(user, withdraw token, amount,  token address, shares, request hash, current NAV)
     #[instruction(discriminator = 1)]
     #[doc = "# Withdraw Request\nEnable user to request a withdrawal in a certain currency and record it onchain."]
     pub fn vault_withdraw_request(
@@ -182,11 +182,22 @@ pub mod solvbtc {
     }
 
     #[instruction(discriminator = 18)]
-    #[doc = "# Transfer Minter Manager Admin\nEnable admin to transfer admin priveleges to a new address."]
+    #[doc = "# Transfer Minter Manager Admin\nEnable admin to transfer admin privileges to a new address."]
     pub fn minter_manager_transfer_admin(
         ctx: Context<MinterManagerTransferAdmin>,
         admin: Pubkey,
     ) -> Result<()> {
         ctx.accounts.transfer_admin(admin)
+    }
+
+    #[instruction(discriminator = 19)]
+    #[doc = "# Withdraw\nEnable user to process a withdrawal with a signed withdraw request v2."]
+    pub fn vault_withdraw_v2(
+        ctx: Context<VaultWithdraw>,
+        _hash: [u8; 32],
+        signature: [u8; 64],
+    ) -> Result<()> {
+        ctx.accounts.withdraw_tokens_v2(signature)?;
+        ctx.accounts.close_request_account()
     }
 }

@@ -13,6 +13,9 @@ pub struct MinterManager {
 
 impl MinterManager {
     pub fn initialize(&mut self, admin: Pubkey, bump: u8) -> Result<()> {
+        if admin.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         self.admin = admin;
         self.bump = bump;
         self.update()
@@ -38,7 +41,7 @@ impl MinterManager {
         if let Some(empty_index) = self
             .minters
             .iter()
-            .position(|&pubkey| pubkey == Pubkey::default())
+            .position(|&pubkey| pubkey.eq(&Pubkey::default()))
         {
             // Check if the minter already exists in the occupied slots (0..empty_index)
             if self.minters[0..empty_index].contains(&minter) {
@@ -55,14 +58,14 @@ impl MinterManager {
     }
 
     pub fn remove_minter(&mut self, minter: Pubkey) -> Result<()> {
-        // Ensure we are not trying to add a null address
+        // Ensure we are not trying to remove a null address
         if minter.eq(&Pubkey::default()) {
             return Err(SolvError::InvalidAddress.into());
         }
 
-        // Find the first instance of the minter
-        if let Some(index) = self.minters.iter().position(|&pubkey| pubkey == minter) {
-            // Shift all elements after the found index up by one position
+        // Find the minter, if it exists
+        if let Some(index) = self.minters.iter().position(|&pubkey| pubkey.eq(&minter)) {
+            // Shift all elements after the found index down by one position
             for i in index..self.minters.len() - 1 {
                 self.minters[i] = self.minters[i + 1];
             }

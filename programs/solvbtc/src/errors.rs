@@ -30,4 +30,7 @@ pub enum SolvError {
     MathOverflow,
     #[msg("SolvOracle: Invalid Max NAV Change - must be <=10,000")]
     InvalidMaxNavChange,
+    #[msg("SolvOracle: Nav update too frequently")]
+    NavUpdateTooFrequent
+
 }

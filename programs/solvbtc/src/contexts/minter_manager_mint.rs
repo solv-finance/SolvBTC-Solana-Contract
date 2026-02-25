@@ -6,9 +6,8 @@ use anchor_spl::token_interface::{
 
 #[derive(Accounts)]
 pub struct MinterManagerMint<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    /// Separate authority from payer to support multisig and PDA signers
+
+
     pub authority: Signer<'info>,
     #[account(mut)]
     pub mint: InterfaceAccount<'info, Mint>,

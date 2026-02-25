@@ -1,5 +1,5 @@
 use crate::{
-    errors::SolvError, state::{Vault, WithdrawRequest}
+    errors::SolvError, state::{Vault, WithdrawRequestV2}
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -30,7 +30,7 @@ pub struct VaultRequestWithdraw<'info> {
     #[account(
         init,
         payer = user,
-        space = WithdrawRequest::DISCRIMINATOR.len() + WithdrawRequest::INIT_SPACE,
+        space = WithdrawRequestV2::DISCRIMINATOR.len() + WithdrawRequestV2::INIT_SPACE,
         seeds = [
             b"withdraw_request", 
             vault.key().as_ref(),
@@ -40,7 +40,7 @@ pub struct VaultRequestWithdraw<'info> {
         ],
         bump,
     )]
-    pub withdraw_request: Account<'info, WithdrawRequest>,
+    pub withdraw_request: Account<'info, WithdrawRequestV2>,
     #[account(
         mut,
         seeds = [b"vault", mint_target.key().as_ref()],
@@ -49,7 +49,6 @@ pub struct VaultRequestWithdraw<'info> {
     )]
     pub vault: Account<'info, Vault>,
     pub token_program: Interface<'info, TokenInterface>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 
@@ -87,6 +86,7 @@ impl<'info> VaultRequestWithdraw<'info> {
             shares,
             request_hash,
             self.vault.nav,
+            self.vault.mint,
         )
     }
 }

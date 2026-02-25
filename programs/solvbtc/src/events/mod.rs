@@ -12,6 +12,18 @@ pub struct WithdrawRequestEvent {
 }
 
 #[event]
+pub struct WithdrawRequestEventV2 {
+    pub user: Pubkey,
+    pub withdraw_token: Pubkey,
+    pub withdraw_amount: u64,
+    pub token: Pubkey,
+    pub shares: u64,
+    pub request_hash: [u8; 32],
+    pub nav: u64,
+    pub mint: Pubkey,
+}
+
+#[event]
 pub struct WithdrawEvent {
     pub user: Pubkey,
     pub withdraw_token: Pubkey,

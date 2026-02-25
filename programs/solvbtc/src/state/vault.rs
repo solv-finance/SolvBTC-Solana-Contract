@@ -1,6 +1,6 @@
 use anchor_lang::prelude::{borsh::de, *};
 
-use crate::{constants::{MAX_FEE, ONE_BITCOIN}, errors::SolvError};
+use crate::{constants::{MAX_FEE, ONE_BITCOIN, FREEZE_PERIOD, DELTA}, errors::SolvError};
 
 #[account(discriminator = [1])]
 #[derive(InitSpace)]
@@ -40,6 +40,19 @@ impl Vault {
     ) -> Result<()> {
         require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
         require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
+        if admin.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
+        if fee_receiver.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
+        if treasurer.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
+        if oracle_manager.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
+
         *self = Vault {
             admin,
             mint,
@@ -69,35 +82,44 @@ impl Vault {
 
     pub fn transfer_admin(&mut self, admin: Pubkey) -> Result<()> {
         self.admin = admin;
-        self.update()
+        Ok(())
     }
 
     pub fn set_deposit_fee(&mut self, currency: Pubkey, deposit_fee: u16) -> Result<()> {
         require_gte!(MAX_FEE, deposit_fee, SolvError::InvalidFeeRatio);
+        if currency.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         let index = self.deposit_currencies.iter().position(|token| token.mint.eq(&currency)).ok_or(SolvError::CurrencyNotFound)?;
         self.deposit_currencies[index].deposit_fee = deposit_fee;
-        self.update()
+        Ok(())
     }
 
     pub fn set_withdraw_fee(&mut self, withdraw_fee: u16) -> Result<()> {
         require_gte!(MAX_FEE, withdraw_fee, SolvError::InvalidFeeRatio);
         self.withdraw_fee = withdraw_fee;
-        self.update()
+        Ok(())
     }
 
     pub fn set_fee_receiver(&mut self, fee_receiver: Pubkey) -> Result<()> {
+        if fee_receiver.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         self.fee_receiver = fee_receiver;
-        self.update()
+        Ok(())
     }
 
     pub fn set_verifier(&mut self, verifier: [u8; 64]) -> Result<()> {
         self.verifier = verifier;
-        self.update()
+        Ok(())
     }
 
     pub fn set_treasurer(&mut self, treasurer: Pubkey) -> Result<()> {
+        if treasurer.eq(&Pubkey::default()) {
+            return Err(SolvError::InvalidAddress.into());
+        }
         self.treasurer = treasurer;
-        self.update()
+        Ok(())
     }
 
     pub fn add_currency(&mut self, mint: Pubkey, deposit_fee: u16) -> Result<()> {
@@ -105,6 +127,7 @@ impl Vault {
         if mint.eq(&Pubkey::default()) {
             return Err(SolvError::InvalidAddress.into());
         }
+        require_gte!(MAX_FEE, deposit_fee, SolvError::InvalidFeeRatio);
         // Find the first empty slot (Pubkey::default())
         if let Some(empty_index) = self
             .deposit_currencies
@@ -119,7 +142,7 @@ impl Vault {
             // Add the currency to the first empty slot
             self.deposit_currencies[empty_index] = WhitelistedToken { mint, deposit_fee };
 
-            self.update()
+            Ok(())
         } else {
             // No empty slots available
             Err(SolvError::CurrencyArrayFull.into())
@@ -127,24 +150,24 @@ impl Vault {
     }
 
     pub fn remove_currency(&mut self, currency: Pubkey) -> Result<()> {
-        // Ensure we are not trying to add a null address
+        // Ensure we are not trying to remove a null address
         if currency.eq(&Pubkey::default()) {
             return Err(SolvError::InvalidAddress.into());
         }
-        // Find the first instance of the currency
+        // Find the currency, if it exists
         if let Some(index) = self
             .deposit_currencies
             .iter()
             .position(|&token| token.mint.eq(&currency))
         {
-            // Shift all elements after the found index up by one position
+            // Shift all elements after the found index down by one position
             for i in index..self.deposit_currencies.len() - 1 {
                 self.deposit_currencies[i] = self.deposit_currencies[i + 1];
             }
             // Set the last element to default (empty)
             self.deposit_currencies[self.deposit_currencies.len() - 1] = WhitelistedToken::default();
             
-            self.update()
+            Ok(())
         } else {
             // Currency not found
             Err(SolvError::CurrencyNotFound.into())
@@ -154,7 +177,7 @@ impl Vault {
     pub fn set_nav(&mut self, nav: u64) -> Result<()> {
         // Check nav growth/decrease does not exceed 0.05%
         let nav_diff: u64 = u64::try_from(u128::from(self.nav)
-            .checked_mul(5 as u128)
+            .checked_mul(DELTA as u128)
             .ok_or(ProgramError::ArithmeticOverflow)?
             .checked_div(MAX_FEE.into())
             .ok_or(ProgramError::ArithmeticOverflow)?)
@@ -164,13 +187,18 @@ impl Vault {
         let min_nav = self.nav.checked_sub(nav_diff).ok_or(ProgramError::ArithmeticOverflow)?;
         require_gte!(max_nav, nav, SolvError::InvalidNAVValue);
         require_gte!(nav, min_nav, SolvError::InvalidNAVValue);
+        require_gte!(nav, ONE_BITCOIN, SolvError::InvalidNAVValue);
+        let slot = Clock::get()?;
+        // Check 24-hour update frequency limit
+        require_gte!(slot.unix_timestamp, self.oracle_updated + FREEZE_PERIOD , SolvError::NavUpdateTooFrequent);
+
         self.nav = nav;
         self.update()
     }
 
     pub fn set_oracle_manager(&mut self, manager: Pubkey) -> Result<()> {
         self.oracle_manager = manager;
-        self.update()
+        Ok(())
     }
 
     pub fn calculate_fee(amount: u64, fee: u16) -> Result<(u64, u64)> {
@@ -185,7 +213,7 @@ impl Vault {
         Ok((amount, fee))
     }
 
-    pub fn deposit_fee(&self, currency: &Pubkey) -> Result<u16> {
+    pub fn get_deposit_fee(&self, currency: &Pubkey) -> Result<u16> {
         let index = self.deposit_currencies.iter().position(|token| token.mint.eq(currency)).ok_or(SolvError::CurrencyNotFound)?;
         Ok(self.deposit_currencies[index].deposit_fee)
     }

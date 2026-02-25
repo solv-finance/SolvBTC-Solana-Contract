@@ -1,5 +1,5 @@
 use crate::{errors::SolvError, events::DepositEvent, helpers::{mint_to_checked_1_of_n_multisig, MintToChecked1ofNMultisig}, state::Vault};
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
@@ -10,7 +10,7 @@ use anchor_spl::{
 
 #[derive(Accounts)]
 pub struct VaultDeposit<'info> {
-    #[account(mut)]
+
     pub user: Signer<'info>,
     #[account(
         mut,
@@ -37,7 +37,7 @@ pub struct VaultDeposit<'info> {
     #[account(mut)]
     pub mint_target: Box<InterfaceAccount<'info, Mint>>,
     #[account(
-        mut,
+
         seeds = [b"vault", mint_target.key().as_ref()],
         bump = vault.bump,
         constraint = vault.is_whitelisted(&mint_token.key()),
@@ -56,13 +56,14 @@ impl<'info> VaultDeposit<'info> {
             authority: self.user.to_account_info(),
         };
 
+
         let ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
 
         transfer_checked(ctx, amount, self.mint_token.decimals)
     }
 
     pub fn mint_target_tokens(&mut self, amount: u64, min_amount_out: u64) -> Result<()> {
-        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.deposit_fee(&self.mint_token.key())?)?;
+        let (mint_amount, fee_amount) = Vault::calculate_fee(self.vault.shares_from_deposit(amount)?, self.vault.get_deposit_fee(&self.mint_token.key())?)?;
 
         // Slippage protection
         require_gte!(mint_amount, min_amount_out, SolvError::SlippageExceeded);
